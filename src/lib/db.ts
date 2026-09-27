@@ -3,16 +3,30 @@ import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 let sqlClient: NeonQueryFunction<false, false> | null = null;
 let schemaReady: Promise<void> | null = null;
 
-export function getSql() {
-  const url = process.env.DATABASE_URL?.trim();
-  if (!url) {
+function getDatabaseUrl() {
+  const raw = process.env.DATABASE_URL?.trim();
+  if (!raw) {
     throw new Error(
-      "DATABASE_URL is missing. Add your Neon connection string to .env.local (and Vercel env).",
+      "DATABASE_URL is missing. Add your Neon connection string in Vercel Environment Variables.",
     );
   }
 
+  // Some runtimes fail with channel_binding=require on the pooler URL.
+  try {
+    const parsed = new URL(raw);
+    parsed.searchParams.delete("channel_binding");
+    if (!parsed.searchParams.has("sslmode")) {
+      parsed.searchParams.set("sslmode", "require");
+    }
+    return parsed.toString();
+  } catch {
+    return raw;
+  }
+}
+
+export function getSql() {
   if (!sqlClient) {
-    sqlClient = neon(url);
+    sqlClient = neon(getDatabaseUrl());
   }
 
   return sqlClient;

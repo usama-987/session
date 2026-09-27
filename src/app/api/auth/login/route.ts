@@ -31,28 +31,63 @@ export async function POST(request: Request) {
     );
   }
 
-  const adminEmail = (process.env.ADMIN_EMAIL ?? "admin@session.com")
-    .trim()
-    .toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
-  const adminName = process.env.ADMIN_NAME?.trim() || "Admin";
+  try {
+    const adminEmail = (process.env.ADMIN_EMAIL ?? "admin@session.com")
+      .trim()
+      .toLowerCase();
+    const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
+    const adminName = process.env.ADMIN_NAME?.trim() || "Admin";
 
-  if (email === adminEmail && password === adminPassword) {
+    if (email === adminEmail && password === adminPassword) {
+      const token = Buffer.from(
+        `admin:${email}:${Date.now()}:${process.env.AUTH_SECRET ?? "session-secret"}`,
+      ).toString("base64");
+
+      const user = {
+        name: adminName,
+        email,
+        role: "admin" as const,
+      };
+
+      await createSession({
+        name: user.name,
+        email: user.email,
+        token,
+        role: "admin",
+      });
+
+      return NextResponse.json({
+        message: "Login successful.",
+        token,
+        user,
+      });
+    }
+
+    const staff = await findStaffByCredentials(email, password);
+
+    if (!staff) {
+      return NextResponse.json(
+        { message: "Invalid email or password." },
+        { status: 401 },
+      );
+    }
+
     const token = Buffer.from(
-      `admin:${email}:${Date.now()}:${process.env.AUTH_SECRET ?? "session-secret"}`,
+      `staff:${staff.id}:${Date.now()}:${process.env.AUTH_SECRET ?? "session-secret"}`,
     ).toString("base64");
 
     const user = {
-      name: adminName,
-      email,
-      role: "admin" as const,
+      name: staff.name,
+      email: staff.email,
+      role: staff.role,
     };
 
     await createSession({
       name: user.name,
       email: user.email,
       token,
-      role: "admin",
+      role: user.role,
+      userId: staff.id,
     });
 
     return NextResponse.json({
@@ -60,38 +95,17 @@ export async function POST(request: Request) {
       token,
       user,
     });
-  }
-
-  const staff = await findStaffByCredentials(email, password);
-
-  if (!staff) {
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to sign in.";
+    console.error("Login failed:", error);
     return NextResponse.json(
-      { message: "Invalid email or password." },
-      { status: 401 },
+      {
+        message: message.includes("DATABASE_URL")
+          ? "Database is not configured on the server. Set DATABASE_URL in Vercel."
+          : "Server error during login. Check DATABASE_URL and Neon connection.",
+      },
+      { status: 500 },
     );
   }
-
-  const token = Buffer.from(
-    `staff:${staff.id}:${Date.now()}:${process.env.AUTH_SECRET ?? "session-secret"}`,
-  ).toString("base64");
-
-  const user = {
-    name: staff.name,
-    email: staff.email,
-    role: staff.role,
-  };
-
-  await createSession({
-    name: user.name,
-    email: user.email,
-    token,
-    role: user.role,
-    userId: staff.id,
-  });
-
-  return NextResponse.json({
-    message: "Login successful.",
-    token,
-    user,
-  });
 }
