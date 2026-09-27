@@ -59,7 +59,15 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         <div aria-hidden="true" />
       </header>
 
-      <div className="mt-2 grid flex-1 grid-cols-[3rem_1fr_3rem] gap-1">
+      <p
+        lang="ur"
+        dir="rtl"
+        className="pointer-events-none absolute right-4 top-[9.5rem] z-10 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
+      >
+        صدر
+      </p>
+
+      <div className="mt-2 grid flex-1 grid-cols-[2.25rem_1fr_2.25rem] gap-0">
         <aside
           lang="ur"
           className="flex flex-col items-center justify-around py-10 font-[family-name:var(--font-urdu)] text-black"
@@ -68,7 +76,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
           {SIDE_LABELS.map((label, index) => (
             <span
               key={`left-${index}`}
-              className="inline-block origin-center rotate-[90deg] whitespace-nowrap text-[20px] font-bold leading-none"
+              className="inline-block origin-center rotate-[90deg] whitespace-nowrap text-[32px] font-extrabold leading-none"
             >
               {label}
             </span>
@@ -78,46 +86,44 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         <section
           lang="ur"
           dir="rtl"
-          className="flex flex-col px-2 pt-28 font-[family-name:var(--font-urdu)] text-[13px] leading-8 text-black"
+          className="flex flex-col px-3 pt-28 font-[family-name:var(--font-urdu)] text-[16px] leading-9 text-black"
         >
           <div className="w-full">
             <p className="text-right">
               <span>بعدالت جناب</span>
-              <DashField width="14rem" />
+              <DashField width="16rem" />
               <span>منجانب</span>
             </p>
 
-            <p className="mt-1 text-right">
+            <p className="mt-2 text-right">
               <span>عنوان</span>
-              <DashField width="11rem" />
+              <DashField width="13rem" />
               <span>بنام</span>
-              <DashField width="11rem" />
+              <DashField width="13rem" />
             </p>
 
-            <p className="mt-1 text-right">
+            <p className="mt-2 text-right">
               <span>دعویٰ / درخواست تحت دفعہ</span>
-              <DashField width="12rem" />
-            </p>
-
-            <p className="mt-1 text-right">
-              <span>مقدمہ نمبر</span>
-              <DashField width="10rem" />
-              <span>مورخہ</span>
-              <DashField width="10rem" />
-            </p>
-
-            <p className="mt-1 text-right">
-              <span>مقدمہ مندرجہ عنوان میں اپنی طرف سے بمقام</span>
-              <DashField width="9rem" />
-              <span>برائے پیروی و جوابدہی</span>
-            </p>
-
-            <p className="mt-1 text-right">
-              <span>محترم جناب</span>
               <DashField width="14rem" />
             </p>
 
-            <p className="mt-3 text-justify text-[12px] leading-7">
+            <p className="mt-2 text-right">
+              <span>مقدمہ نمبر</span>
+              <DashField width="12rem" />
+            </p>
+
+            <p className="mt-2 text-right">
+              <span>مقدمہ مندرجہ عنوان میں اپنی طرف سے بمقام</span>
+              <DashField width="11rem" />
+              <span>برائے پیروی و جوابدہی</span>
+            </p>
+
+            <p className="mt-2 text-right">
+              <span>محترم جناب</span>
+              <DashField width="16rem" />
+            </p>
+
+            <p className="mt-4 text-justify text-[15px] leading-8">
               العبد کو اپنا وکیل مقرر کرتا / کرتی ہوں۔ مذکورہ وکیل کو اختیار حاصل ہے
               کہ میرے / ہمارے مقدمہ کی پیروی کرے، جواب دے، دلائل پیش کرے، دستاویزات
               داخل کرے، شواہد پیش کرے، شہادت درج کروائے، تصفیہ، مصالحت، دستبرداری،
@@ -128,17 +134,12 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
               کر سکتا / سکتی ہوں۔ یہ وکالت نامہ میری / ہماری رضامندی اور درست ہوش و
               حواس میں تحریر کیا گیا ہے۔
             </p>
-
-            <p className="mt-3 text-right">
-              <span>مورخہ</span>
-              <DashField width="12rem" />
-            </p>
           </div>
 
           <div className="mt-auto grid grid-cols-3 gap-4 pb-4 pt-10 text-center">
             {["العبد", "العبد", "العبد"].map((label, index) => (
               <div key={`footer-${index}`} className="flex flex-col items-center">
-                <p className="text-[28px] font-bold leading-relaxed">{label}</p>
+                <p className="text-[36px] font-extrabold leading-relaxed">{label}</p>
               </div>
             ))}
           </div>
@@ -152,7 +153,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
           {SIDE_LABELS.map((label, index) => (
             <span
               key={`right-${index}`}
-              className="inline-block origin-center rotate-[-90deg] whitespace-nowrap text-[20px] font-bold leading-none"
+              className="inline-block origin-center rotate-[-90deg] whitespace-nowrap text-[32px] font-extrabold leading-none"
             >
               {label}
             </span>
