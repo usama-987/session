@@ -26,7 +26,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
   const serialLabel = displaySerialNumber(certificate.serialNumber);
 
   return (
-    <article className="certificate-sheet relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#f6c9ce] px-3 py-4 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
+    <article className="certificate-sheet relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#eeb8c8] px-3 py-4 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
       <header className="relative grid grid-cols-[1fr_1.5fr_1fr] items-start gap-2 px-2">
         <div dir="ltr" className="flex flex-col items-start gap-1 pt-1 text-left">
           <p className="font-[family-name:var(--font-body)] text-[12px] font-bold leading-tight tracking-wide">
