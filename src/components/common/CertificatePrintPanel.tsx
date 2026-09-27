@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { apiFetch } from "@/lib/api-client";
+import { printCertificates } from "@/lib/print-certificates";
 import type { CertificatePrintItem } from "@/lib/types";
 
 const QUICK_AMOUNTS = [1, 5, 10, 25, 50];
@@ -131,7 +132,7 @@ export function CertificatePrintPanel({
     );
 
     await new Promise((resolve) => window.setTimeout(resolve, 100));
-    window.print();
+    printCertificates();
   }
 
   function handleClosePreview() {

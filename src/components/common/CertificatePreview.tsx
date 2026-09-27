@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { CertificateTemplate } from "@/components/common/CertificateTemplate";
+import { printCertificates } from "@/lib/print-certificates";
 import type { CertificatePrintItem } from "@/lib/types";
 
 type CertificatePreviewProps = {
@@ -22,7 +23,7 @@ export function CertificatePreview({
 
   async function handlePrint() {
     if (!onConfirmPrint) {
-      window.print();
+      printCertificates();
       return;
     }
 
@@ -71,7 +72,7 @@ export function CertificatePreview({
         </div>
       </div>
 
-      <div className="certificate-print-area space-y-8">
+      <div className="certificate-print-area space-y-8 print:space-y-0">
         {certificates.map((certificate) => (
           <CertificateTemplate
             key={certificate.id}
