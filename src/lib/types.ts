@@ -1,0 +1,58 @@
+export type UserRole = "print_certificates";
+export type AuthRole = "admin" | UserRole;
+
+export type StaffUser = {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  certificatesPrinted: number;
+  createdAt: string;
+};
+
+export type PublicStaffUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  certificatesPrinted: number;
+  createdAt: string;
+};
+
+export type DashboardStats = {
+  totalPersons: number;
+  totalPrintCertificates: number;
+};
+
+export type CertificateIssue = {
+  id: string;
+  serialNumber: string;
+  issuedDate: string;
+  printedByUserId: string;
+  printedByName: string;
+  printedByEmail: string;
+  qrPayload: string;
+  createdAt: string;
+};
+
+export type CertificatePrintItem = {
+  id: string;
+  serialNumber: string;
+  issuedDate: string;
+  printedByName: string;
+  qrPayload: string;
+  qrDataUrl: string;
+};
+
+export function formatSerialNumber(sequence: number) {
+  return `CERT-${String(sequence).padStart(6, "0")}`;
+}
+
+export const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "print_certificates", label: "Print Certificates" },
+];
+
+export function roleLabel(role: UserRole) {
+  return ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
+}
