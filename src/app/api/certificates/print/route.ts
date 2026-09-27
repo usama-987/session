@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { attachQrCodes } from "@/lib/certificates";
 import { recordCertificatePrint } from "@/lib/store";
 
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
     );
   }
 
+  const baseUrl = getAppBaseUrl(request);
+
   try {
     const { certificates, certificatesPrinted } = await recordCertificatePrint({
       printer: {
@@ -37,6 +40,7 @@ export async function POST(request: Request) {
       },
       quantity,
       issuedDate: body.issuedDate,
+      baseUrl,
     });
 
     const printItems = await attachQrCodes(
@@ -47,6 +51,7 @@ export async function POST(request: Request) {
         printedByName: certificate.printedByName,
         qrPayload: certificate.qrPayload,
       })),
+      baseUrl,
     );
 
     return NextResponse.json({

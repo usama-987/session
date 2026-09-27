@@ -2,6 +2,10 @@ import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import {
+  buildCertificateVerifyUrl,
+  normalizeCertificateSerial,
+} from "@/lib/app-url";
+import {
   hashPassword,
   looksLikeHashedPassword,
   verifyPassword,
@@ -180,6 +184,7 @@ export async function previewCertificatePrint(input: {
   };
   quantity?: number;
   issuedDate?: string;
+  baseUrl: string;
 }) {
   const store = await ensureStore();
   const printer = resolvePrinter(store, input.printer);
@@ -189,6 +194,7 @@ export async function previewCertificatePrint(input: {
     quantity,
     issuedDate,
     startSerial: store.nextSerial,
+    baseUrl: input.baseUrl,
   });
 
   return {
@@ -206,6 +212,7 @@ export async function recordCertificatePrint(input: {
   };
   quantity?: number;
   issuedDate?: string;
+  baseUrl: string;
 }) {
   const store = await ensureStore();
   const printer = resolvePrinter(store, input.printer);
@@ -215,6 +222,7 @@ export async function recordCertificatePrint(input: {
     quantity,
     issuedDate,
     startSerial: store.nextSerial,
+    baseUrl: input.baseUrl,
   });
 
   store.nextSerial += quantity;
@@ -320,6 +328,7 @@ function buildCertificateBatch(input: {
   quantity: number;
   issuedDate: string;
   startSerial: number;
+  baseUrl: string;
 }) {
   const createdAt = new Date().toISOString();
   const batch: CertificateIssue[] = [];
@@ -334,16 +343,28 @@ function buildCertificateBatch(input: {
       printedByUserId: input.printer.id,
       printedByName: input.printer.name,
       printedByEmail: input.printer.email,
-      qrPayload: JSON.stringify({
-        serial: serialNumber,
-        date: input.issuedDate,
-        issuer: input.printer.email,
-      }),
+      qrPayload: buildCertificateVerifyUrl(serialNumber, input.baseUrl),
       createdAt,
     });
   }
 
   return batch;
+}
+
+export async function getCertificateBySerial(serial: string) {
+  const store = await ensureStore();
+  const needle = normalizeCertificateSerial(serial);
+
+  return (
+    store.certificates.find((certificate) => {
+      const stored = normalizeCertificateSerial(certificate.serialNumber);
+      return (
+        stored === needle ||
+        certificate.serialNumber === serial.trim() ||
+        certificate.serialNumber.replace(/\D/g, "") === serial.replace(/\D/g, "")
+      );
+    }) ?? null
+  );
 }
 
 export async function getUserById(id: string) {
