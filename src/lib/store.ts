@@ -32,6 +32,8 @@ type StoreData = {
   sessions: AuthSession[];
   certificates: CertificateIssue[];
   nextSerial: number;
+  /** Historical prints already issued before this store (shown on dashboard). */
+  priorPrintCount: number;
 };
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -51,6 +53,12 @@ async function ensureStore(): Promise<StoreData> {
         typeof parsed.nextSerial === "number" && parsed.nextSerial > 0
           ? parsed.nextSerial
           : deriveNextSerial(parsed),
+      priorPrintCount:
+        typeof (parsed as { priorPrintCount?: number }).priorPrintCount ===
+          "number" &&
+        (parsed as { priorPrintCount?: number }).priorPrintCount! >= 0
+          ? (parsed as { priorPrintCount: number }).priorPrintCount
+          : 0,
     };
     return reconcileCertificateCounts(await migratePlaintextPasswords(store));
   } catch {
@@ -59,6 +67,7 @@ async function ensureStore(): Promise<StoreData> {
       sessions: [],
       certificates: [],
       nextSerial: 1,
+      priorPrintCount: 0,
     };
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(DATA_FILE, JSON.stringify(empty, null, 2), "utf8");
@@ -167,11 +176,15 @@ export async function createUser(input: {
   return user;
 }
 
+function totalCertificatesPrinted(store: StoreData) {
+  return store.priorPrintCount + store.certificates.length;
+}
+
 export async function getDashboardStats() {
   const store = await ensureStore();
   return {
     totalPersons: store.users.length,
-    totalPrintCertificates: store.certificates.length,
+    totalPrintCertificates: totalCertificatesPrinted(store),
   };
 }
 
@@ -198,7 +211,10 @@ export async function previewCertificatePrint(input: {
   });
 
   return {
-    certificatesPrinted: countPrintedBy(store, printer.id),
+    certificatesPrinted:
+      printer.role === "admin"
+        ? store.priorPrintCount + countPrintedBy(store, printer.id)
+        : countPrintedBy(store, printer.id),
     certificates,
   };
 }
@@ -238,7 +254,10 @@ export async function recordCertificatePrint(input: {
   await writeStore(store);
 
   return {
-    certificatesPrinted: countPrintedBy(store, printer.id),
+    certificatesPrinted:
+      printer.role === "admin"
+        ? store.priorPrintCount + countPrintedBy(store, printer.id)
+        : countPrintedBy(store, printer.id),
     certificates,
   };
 }
@@ -256,7 +275,11 @@ export async function getPrintedCountForAccount(input: {
     email: input.email,
     role: input.role,
   });
-  return countPrintedBy(store, printer.id);
+  const printed = countPrintedBy(store, printer.id);
+  if (printer.role === "admin") {
+    return store.priorPrintCount + printed;
+  }
+  return printed;
 }
 
 function countPrintedBy(store: StoreData, printerId: string) {
@@ -514,9 +537,11 @@ export function toPublicUser(user: StaffUser) {
 
 export async function getDirectoryUsers() {
   const store = await ensureStore();
-  const adminPrinted = store.certificates.filter(
-    (certificate) => certificate.printedByUserId === "admin",
-  ).length;
+  const adminPrinted =
+    store.priorPrintCount +
+    store.certificates.filter(
+      (certificate) => certificate.printedByUserId === "admin",
+    ).length;
 
   const adminEntry = {
     id: "admin",
