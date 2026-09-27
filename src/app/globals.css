@@ -89,6 +89,8 @@ body {
     box-shadow: none !important;
     break-after: page;
     page-break-after: always;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .certificate-sheet:last-child {

@@ -78,7 +78,7 @@ async function reconcileCertificateCounts(store: StoreData) {
 
   const expectedNext =
     store.certificates.reduce((max, certificate) => {
-      const match = /^CERT-(\d+)$/.exec(certificate.serialNumber);
+      const match = /(\d+)/.exec(certificate.serialNumber);
       const value = match ? Number(match[1]) : 0;
       return Math.max(max, value);
     }, 0) + 1;

@@ -56,7 +56,13 @@ export type CertificatePrintItem = {
 };
 
 export function formatSerialNumber(sequence: number) {
-  return `CERT-${String(sequence).padStart(6, "0")}`;
+  return String(sequence).padStart(9, "0");
+}
+
+export function displaySerialNumber(serial: string) {
+  const digits = serial.replace(/\D/g, "");
+  const value = digits || serial;
+  return `S.NO#${value.padStart(9, "0")}`;
 }
 
 export const ROLE_OPTIONS: { value: UserRole; label: string }[] = [

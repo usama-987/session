@@ -7,8 +7,8 @@ export async function buildCertificateQrDataUrl(payload: string) {
     margin: 1,
     width: 180,
     color: {
-      dark: "#0f3d3e",
-      light: "#ffffff",
+      dark: "#000000",
+      light: "#00000000",
     },
   });
 }

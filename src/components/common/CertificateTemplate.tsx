@@ -1,84 +1,53 @@
-import type { CertificatePrintItem } from "@/lib/types";
+import { displaySerialNumber, type CertificatePrintItem } from "@/lib/types";
 
 type CertificateTemplateProps = {
   certificate: CertificatePrintItem;
 };
 
 /**
- * Urdu certificate layout.
- * Replace / restyle this component when the final design templates arrive.
- * Keep these fields available: serialNumber, issuedDate, qrDataUrl, printedByName.
+ * Vakalat Nama certificate header layout.
+ * Left: date, serial, QR. Center: Urdu heading. Right: empty.
  */
 export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
-  const formattedDate = new Date(
-    `${certificate.issuedDate}T00:00:00`,
-  ).toLocaleDateString("ur-PK", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const [year, month, day] = certificate.issuedDate.split("-");
+  const dated = `${day}-${month}-${year}`;
+  const serialLabel = displaySerialNumber(certificate.serialNumber);
 
   return (
-    <article
-      lang="ur"
-      dir="rtl"
-      className="certificate-sheet relative mx-auto flex min-h-[240mm] w-[170mm] flex-col justify-between overflow-hidden rounded-[18px] border-[3px] border-[var(--brand)] bg-[#fffdf8] px-10 py-12 font-[family-name:var(--font-urdu)] text-[var(--brand)] shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]"
-    >
-      <div
-        className="pointer-events-none absolute inset-4 rounded-[14px] border border-[var(--accent)]/35"
-        aria-hidden="true"
-      />
-
-      <header className="relative text-center">
-        <p className="text-base font-semibold text-[var(--accent)]">
-          سیشن سرٹیفکیٹ
-        </p>
-        <h2 className="mt-4 text-4xl font-semibold leading-relaxed tracking-tight sm:text-5xl">
-          مکمل ہونے کا سرٹیفکیٹ
-        </h2>
-        <p className="mt-4 text-base leading-8 text-[var(--muted)]">
-          یہ عارضی سانچہ ہے — حتمی ڈیزائن بعد میں شامل کیا جائے گا۔
-        </p>
-      </header>
-
-      <div className="relative mt-10 flex flex-1 flex-col items-center justify-center text-center">
-        <p className="text-base text-[var(--muted)]">سیریل نمبر</p>
-        <p
-          dir="ltr"
-          className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-wide"
-        >
-          {certificate.serialNumber}
-        </p>
-
-        <p className="mt-8 text-base text-[var(--muted)]">تاریخ</p>
-        <p className="mt-2 text-2xl font-semibold leading-relaxed">
-          {formattedDate}
-        </p>
-
-        <p className="mt-8 max-w-sm text-base leading-9 text-[var(--muted)]">
-          جاری کنندہ: {certificate.printedByName}۔ تصدیق کے لیے نیچے کیو آر کوڈ
-          اسکین کریں۔
-        </p>
-      </div>
-
-      <footer className="relative mt-10 flex items-end justify-between gap-6">
-        <div className="text-right">
-          <div className="ms-auto h-px w-40 bg-[var(--brand)]/40" />
-          <p className="mt-2 text-sm text-[var(--muted)]">مجاز مہر</p>
-        </div>
-
-        <div className="text-center">
+    <article className="certificate-sheet relative mx-auto flex min-h-[240mm] w-[210mm] flex-col overflow-hidden bg-[#f6c9ce] px-6 py-5 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
+      <header className="relative grid grid-cols-[1fr_1.4fr_1fr] items-start gap-3">
+        <div dir="ltr" className="flex flex-col items-start gap-1 pt-1 text-left">
+          <p className="font-[family-name:var(--font-body)] text-[13px] font-bold leading-tight tracking-wide">
+            DATED: {dated}
+          </p>
+          <p className="font-[family-name:var(--font-body)] text-[13px] font-bold leading-tight tracking-wide">
+            {serialLabel}
+          </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={certificate.qrDataUrl}
-            alt={`${certificate.serialNumber} کا کیو آر کوڈ`}
-            className="mx-auto h-28 w-28 rounded-lg border border-[var(--border)] bg-white p-1"
+            alt={`QR for ${serialLabel}`}
+            className="mt-1 h-[72px] w-[72px] border border-black bg-transparent p-[2px]"
           />
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            تصدیق کے لیے اسکین کریں
+        </div>
+
+        <div
+          lang="ur"
+          dir="rtl"
+          className="flex flex-col items-center justify-start pt-1 text-center font-[family-name:var(--font-urdu)]"
+        >
+          <h1 className="text-[32px] font-bold leading-relaxed text-black">
+            وکالت نامہ
+          </h1>
+          <p className="mt-4 text-[16px] font-semibold leading-relaxed tracking-wide text-black">
+            ڈسٹرکٹ بار ایسوسی ایشن، بہاول نگر
           </p>
         </div>
-      </footer>
+
+        <div aria-hidden="true" />
+      </header>
+
+      <div className="mt-8 flex-1" />
     </article>
   );
 }
