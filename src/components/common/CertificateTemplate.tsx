@@ -4,9 +4,21 @@ type CertificateTemplateProps = {
   certificate: CertificatePrintItem;
 };
 
+const SIDE_LABELS = Array.from({ length: 5 }, () => "العبد");
+
+function DashField({ width = "10rem" }: { width?: string }) {
+  return (
+    <span
+      className="mx-1 inline-block translate-y-[-2px] border-b border-dashed border-black"
+      style={{ width, minWidth: width }}
+      aria-hidden="true"
+    />
+  );
+}
+
 /**
- * Vakalat Nama certificate header layout.
- * Left: date, serial, QR. Center: Urdu heading. Right: empty.
+ * Printed Vakalat Nama form.
+ * Handwriting replaced with dashed blanks. No stamps or signatures.
  */
 export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
   const [year, month, day] = certificate.issuedDate.split("-");
@@ -14,20 +26,20 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
   const serialLabel = displaySerialNumber(certificate.serialNumber);
 
   return (
-    <article className="certificate-sheet relative mx-auto flex min-h-[240mm] w-[210mm] flex-col overflow-hidden bg-[#f6c9ce] px-6 py-5 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
-      <header className="relative grid grid-cols-[1fr_1.4fr_1fr] items-start gap-3">
+    <article className="certificate-sheet relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#f6c9ce] px-3 py-4 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
+      <header className="relative grid grid-cols-[1fr_1.5fr_1fr] items-start gap-2 px-2">
         <div dir="ltr" className="flex flex-col items-start gap-1 pt-1 text-left">
-          <p className="font-[family-name:var(--font-body)] text-[13px] font-bold leading-tight tracking-wide">
+          <p className="font-[family-name:var(--font-body)] text-[12px] font-bold leading-tight tracking-wide">
             DATED: {dated}
           </p>
-          <p className="font-[family-name:var(--font-body)] text-[13px] font-bold leading-tight tracking-wide">
+          <p className="font-[family-name:var(--font-body)] text-[12px] font-bold leading-tight tracking-wide">
             {serialLabel}
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={certificate.qrDataUrl}
             alt={`QR for ${serialLabel}`}
-            className="mt-1 h-[72px] w-[72px] border border-black bg-transparent p-[2px]"
+            className="mt-1 h-[68px] w-[68px] border border-black bg-transparent p-[2px]"
           />
         </div>
 
@@ -36,10 +48,10 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
           dir="rtl"
           className="flex flex-col items-center justify-start pt-1 text-center font-[family-name:var(--font-urdu)]"
         >
-          <h1 className="text-[32px] font-bold leading-relaxed text-black">
+          <h1 className="text-[30px] font-bold leading-relaxed tracking-[0.12em] text-black">
             وکالت نامہ
           </h1>
-          <p className="mt-4 text-[16px] font-semibold leading-relaxed tracking-wide text-black">
+          <p className="mt-3 text-[15px] font-semibold leading-relaxed tracking-wide text-black">
             ڈسٹرکٹ بار ایسوسی ایشن، بہاول نگر
           </p>
         </div>
@@ -47,7 +59,106 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         <div aria-hidden="true" />
       </header>
 
-      <div className="mt-8 flex-1" />
+      <div className="mt-2 grid flex-1 grid-cols-[3rem_1fr_3rem] gap-1">
+        <aside
+          lang="ur"
+          className="flex flex-col items-center justify-around py-10 font-[family-name:var(--font-urdu)] text-black"
+          aria-hidden="true"
+        >
+          {SIDE_LABELS.map((label, index) => (
+            <span
+              key={`left-${index}`}
+              className="inline-block origin-center rotate-[90deg] whitespace-nowrap text-[20px] font-bold leading-none"
+            >
+              {label}
+            </span>
+          ))}
+        </aside>
+
+        <section
+          lang="ur"
+          dir="rtl"
+          className="flex flex-col px-2 pt-28 font-[family-name:var(--font-urdu)] text-[13px] leading-8 text-black"
+        >
+          <div className="w-full">
+            <p className="text-right">
+              <span>بعدالت جناب</span>
+              <DashField width="14rem" />
+              <span>منجانب</span>
+            </p>
+
+            <p className="mt-1 text-right">
+              <span>عنوان</span>
+              <DashField width="11rem" />
+              <span>بنام</span>
+              <DashField width="11rem" />
+            </p>
+
+            <p className="mt-1 text-right">
+              <span>دعویٰ / درخواست تحت دفعہ</span>
+              <DashField width="12rem" />
+            </p>
+
+            <p className="mt-1 text-right">
+              <span>مقدمہ نمبر</span>
+              <DashField width="10rem" />
+              <span>مورخہ</span>
+              <DashField width="10rem" />
+            </p>
+
+            <p className="mt-1 text-right">
+              <span>مقدمہ مندرجہ عنوان میں اپنی طرف سے بمقام</span>
+              <DashField width="9rem" />
+              <span>برائے پیروی و جوابدہی</span>
+            </p>
+
+            <p className="mt-1 text-right">
+              <span>محترم جناب</span>
+              <DashField width="14rem" />
+            </p>
+
+            <p className="mt-3 text-justify text-[12px] leading-7">
+              العبد کو اپنا وکیل مقرر کرتا / کرتی ہوں۔ مذکورہ وکیل کو اختیار حاصل ہے
+              کہ میرے / ہمارے مقدمہ کی پیروی کرے، جواب دے، دلائل پیش کرے، دستاویزات
+              داخل کرے، شواہد پیش کرے، شہادت درج کروائے، تصفیہ، مصالحت، دستبرداری،
+              دعویٰ واپس لینے، اپیل، نظرثانی، نظر ثانی، رٹ، عرضی یا کوئی اور قانونی
+              کارروائی کرے، نیز عدالت سے جو بھی حکم صادر ہو اسے میرے / ہمارے حق میں
+              تسلیم کیا جائے گا۔ وکیل کو یہ بھی اختیار ہوگا کہ وہ اپنی جگہ کسی دوسرے
+              وکیل کو مقرر کرے اور وہ تمام کارروائیاں انجام دے جو میں خود حاضر ہو کر
+              کر سکتا / سکتی ہوں۔ یہ وکالت نامہ میری / ہماری رضامندی اور درست ہوش و
+              حواس میں تحریر کیا گیا ہے۔
+            </p>
+
+            <p className="mt-3 text-right">
+              <span>مورخہ</span>
+              <DashField width="12rem" />
+            </p>
+          </div>
+
+          <div className="mt-auto grid grid-cols-3 gap-4 pb-4 pt-10 text-center">
+            {["العبد", "العبد", "العبد"].map((label, index) => (
+              <div key={`footer-${index}`} className="flex flex-col items-center">
+                <p className="text-[28px] font-bold leading-relaxed">{label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <aside
+          lang="ur"
+          className="flex flex-col items-center justify-around py-10 font-[family-name:var(--font-urdu)] text-black"
+          aria-hidden="true"
+        >
+          {SIDE_LABELS.map((label, index) => (
+            <span
+              key={`right-${index}`}
+              className="inline-block origin-center rotate-[-90deg] whitespace-nowrap text-[20px] font-bold leading-none"
+            >
+              {label}
+            </span>
+          ))}
+        </aside>
+      </div>
     </article>
   );
 }
