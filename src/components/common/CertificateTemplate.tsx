@@ -33,7 +33,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         src="/watermark.png"
         alt=""
         aria-hidden="true"
-        className="certificate-watermark pointer-events-none absolute left-1/2 top-1/2 z-0 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12] select-none"
+        className="certificate-watermark pointer-events-none absolute left-1/2 top-[58%] z-0 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12] select-none"
         draggable={false}
       />
 
@@ -64,6 +64,24 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
           <p className="mt-3 text-[15px] font-semibold leading-relaxed tracking-wide text-black">
             ڈسٹرکٹ بار ایسوسی ایشن، بہاول نگر
           </p>
+          <div
+            className="certificate-ticket-hex mt-3 flex h-[110px] w-[150px] items-center justify-center"
+            aria-hidden="true"
+          >
+            <svg
+              viewBox="0 0 100 86"
+              className="h-full w-full overflow-visible"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <polygon
+                points="50,2 96,25 96,61 50,84 4,61 4,25"
+                stroke="black"
+                strokeWidth="1.75"
+                fill="none"
+              />
+            </svg>
+          </div>
         </div>
 
         <div aria-hidden="true" />
@@ -72,7 +90,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
       <p
         lang="ur"
         dir="rtl"
-        className="pointer-events-none absolute right-8 top-[9.5rem] z-10 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
+        className="pointer-events-none absolute right-8 top-[8rem] z-10 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
       >
         صدر
       </p>
@@ -80,7 +98,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
       <div className="relative z-[1] mt-2 grid flex-1 grid-cols-[3.25rem_1fr_3.25rem] items-start gap-4">
         <aside
           lang="ur"
-          className="flex flex-col items-center justify-between gap-16 pt-28 pb-2 font-[family-name:var(--font-urdu)] text-black"
+          className="flex flex-col items-center justify-between gap-16 pt-8 pb-2 font-[family-name:var(--font-urdu)] text-black"
           aria-hidden="true"
         >
           {SIDE_LABELS.map((label, index) => (
@@ -96,7 +114,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         <section
           lang="ur"
           dir="rtl"
-          className="flex flex-col px-5 pt-28 font-[family-name:var(--font-urdu)] text-[18px] leading-9 text-black"
+          className="flex flex-col px-5 pt-8 font-[family-name:var(--font-urdu)] text-[18px] leading-9 text-black"
         >
           <div className="w-full">
             <p className="whitespace-nowrap text-right">
@@ -160,7 +178,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
 
         <aside
           lang="ur"
-          className="flex flex-col items-center justify-between gap-16 pt-28 pb-2 font-[family-name:var(--font-urdu)] text-black"
+          className="flex flex-col items-center justify-between gap-16 pt-8 pb-2 font-[family-name:var(--font-urdu)] text-black"
           aria-hidden="true"
         >
           {SIDE_LABELS.map((label, index) => (
