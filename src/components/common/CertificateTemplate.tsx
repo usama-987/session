@@ -4,7 +4,8 @@ type CertificateTemplateProps = {
   certificate: CertificatePrintItem;
 };
 
-const SIDE_LABELS = Array.from({ length: 5 }, () => "العبد");
+const SIDE_LABELS = Array.from({ length: 6 }, () => "العبد");
+const FOOTER_LABELS = Array.from({ length: 3 }, () => "العبد");
 
 function DashField({ width = "10rem" }: { width?: string }) {
   return (
@@ -26,8 +27,8 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
   const serialLabel = displaySerialNumber(certificate.serialNumber);
 
   return (
-    <article className="certificate-sheet relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#eeb8c8] px-3 py-4 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
-      <header className="relative grid grid-cols-[1fr_1.5fr_1fr] items-start gap-2 px-2">
+    <article className="certificate-sheet relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#eeb8c8] px-6 py-4 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
+      <header className="relative grid grid-cols-[1fr_1.5fr_1fr] items-start gap-2 px-3">
         <div dir="ltr" className="flex flex-col items-start gap-1 pt-1 text-left">
           <p className="font-[family-name:var(--font-body)] text-[12px] font-bold leading-tight tracking-wide">
             DATED: {dated}
@@ -62,21 +63,21 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
       <p
         lang="ur"
         dir="rtl"
-        className="pointer-events-none absolute right-4 top-[9.5rem] z-10 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
+        className="pointer-events-none absolute right-8 top-[9.5rem] z-10 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
       >
         صدر
       </p>
 
-      <div className="mt-2 grid flex-1 grid-cols-[2.25rem_1fr_2.25rem] gap-0">
+      <div className="mt-2 grid flex-1 grid-cols-[3.25rem_1fr_3.25rem] items-start gap-4">
         <aside
           lang="ur"
-          className="flex flex-col items-center justify-around py-10 font-[family-name:var(--font-urdu)] text-black"
+          className="flex flex-col items-center justify-between gap-16 pt-28 pb-2 font-[family-name:var(--font-urdu)] text-black"
           aria-hidden="true"
         >
           {SIDE_LABELS.map((label, index) => (
             <span
               key={`left-${index}`}
-              className="inline-block origin-center rotate-[90deg] whitespace-nowrap text-[32px] font-extrabold leading-none"
+              className="inline-block origin-center rotate-[90deg] whitespace-nowrap text-[44px] font-extrabold leading-none"
             >
               {label}
             </span>
@@ -86,13 +87,14 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         <section
           lang="ur"
           dir="rtl"
-          className="flex flex-col px-3 pt-28 font-[family-name:var(--font-urdu)] text-[16px] leading-9 text-black"
+          className="flex flex-col px-5 pt-28 font-[family-name:var(--font-urdu)] text-[18px] leading-9 text-black"
         >
           <div className="w-full">
-            <p className="text-right">
+            <p className="whitespace-nowrap text-right">
               <span>بعدالت جناب</span>
-              <DashField width="16rem" />
+              <DashField width="11rem" />
               <span>منجانب</span>
+              <DashField width="11rem" />
             </p>
 
             <p className="mt-2 text-right">
@@ -103,27 +105,29 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
             </p>
 
             <p className="mt-2 text-right">
-              <span>دعویٰ / درخواست تحت دفعہ</span>
+              <span>دعویٰ / درخواست</span>
               <DashField width="14rem" />
             </p>
 
             <p className="mt-2 text-right">
               <span>مقدمہ نمبر</span>
-              <DashField width="12rem" />
+              <DashField width="10rem" />
+              <span>جرم</span>
+              <DashField width="10rem" />
             </p>
 
-            <p className="mt-2 text-right">
+            <p className="mt-2 whitespace-nowrap text-right">
               <span>مقدمہ مندرجہ عنوان میں اپنی طرف سے بمقام</span>
-              <DashField width="11rem" />
+              <DashField width="7rem" />
               <span>برائے پیروی و جوابدہی</span>
             </p>
 
             <p className="mt-2 text-right">
               <span>محترم جناب</span>
-              <DashField width="16rem" />
+              <DashField width="30rem" />
             </p>
 
-            <p className="mt-4 text-justify text-[15px] leading-8">
+            <p className="mt-4 text-justify text-[17px] leading-9">
               العبد کو اپنا وکیل مقرر کرتا / کرتی ہوں۔ مذکورہ وکیل کو اختیار حاصل ہے
               کہ میرے / ہمارے مقدمہ کی پیروی کرے، جواب دے، دلائل پیش کرے، دستاویزات
               داخل کرے، شواہد پیش کرے، شہادت درج کروائے، تصفیہ، مصالحت، دستبرداری،
@@ -136,10 +140,10 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
             </p>
           </div>
 
-          <div className="mt-auto grid grid-cols-3 gap-4 pb-4 pt-10 text-center">
-            {["العبد", "العبد", "العبد"].map((label, index) => (
+          <div className="mt-6 grid grid-cols-3 gap-4 pb-2 text-center">
+            {FOOTER_LABELS.map((label, index) => (
               <div key={`footer-${index}`} className="flex flex-col items-center">
-                <p className="text-[36px] font-extrabold leading-relaxed">{label}</p>
+                <p className="text-[36px] font-extrabold leading-none">{label}</p>
               </div>
             ))}
           </div>
@@ -147,13 +151,13 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
 
         <aside
           lang="ur"
-          className="flex flex-col items-center justify-around py-10 font-[family-name:var(--font-urdu)] text-black"
+          className="flex flex-col items-center justify-between gap-16 pt-28 pb-2 font-[family-name:var(--font-urdu)] text-black"
           aria-hidden="true"
         >
           {SIDE_LABELS.map((label, index) => (
             <span
               key={`right-${index}`}
-              className="inline-block origin-center rotate-[-90deg] whitespace-nowrap text-[32px] font-extrabold leading-none"
+              className="inline-block origin-center rotate-[-90deg] whitespace-nowrap text-[44px] font-extrabold leading-none"
             >
               {label}
             </span>
