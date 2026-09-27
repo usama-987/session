@@ -28,7 +28,16 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
 
   return (
     <article className="certificate-sheet relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#eeb8c8] px-6 py-4 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
-      <header className="relative grid grid-cols-[1fr_1.5fr_1fr] items-start gap-2 px-3">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/watermark.png"
+        alt=""
+        aria-hidden="true"
+        className="certificate-watermark pointer-events-none absolute left-1/2 top-1/2 z-0 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12] select-none"
+        draggable={false}
+      />
+
+      <header className="relative z-[1] grid grid-cols-[1fr_1.5fr_1fr] items-start gap-2 px-3">
         <div dir="ltr" className="flex flex-col items-start gap-1 pt-1 text-left">
           <p className="font-[family-name:var(--font-body)] text-[12px] font-bold leading-tight tracking-wide">
             DATED: {dated}
@@ -68,7 +77,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         صدر
       </p>
 
-      <div className="mt-2 grid flex-1 grid-cols-[3.25rem_1fr_3.25rem] items-start gap-4">
+      <div className="relative z-[1] mt-2 grid flex-1 grid-cols-[3.25rem_1fr_3.25rem] items-start gap-4">
         <aside
           lang="ur"
           className="flex flex-col items-center justify-between gap-16 pt-28 pb-2 font-[family-name:var(--font-urdu)] text-black"

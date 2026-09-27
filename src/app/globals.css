@@ -137,6 +137,12 @@ body {
     print-color-adjust: exact;
   }
 
+  .certificate-watermark {
+    opacity: 0.12 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   .certificate-sheet:last-child {
     break-after: auto;
     page-break-after: auto;
