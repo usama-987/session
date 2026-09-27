@@ -22,6 +22,7 @@
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
   --font-urdu: var(--font-urdu);
+  --font-abd: var(--font-abd);
 }
 
 body {

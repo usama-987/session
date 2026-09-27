@@ -99,13 +99,13 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
       <div className="relative z-[1] mt-2 grid flex-1 grid-cols-[3.25rem_1fr_3.25rem] items-start gap-4">
         <aside
           lang="ur"
-          className="flex flex-col items-center justify-between gap-16 pt-8 pb-2 font-[family-name:var(--font-urdu)] text-black"
+          className="flex flex-col items-center justify-between gap-16 pt-8 pb-2 text-black"
           aria-hidden="true"
         >
           {SIDE_LABELS.map((label, index) => (
             <span
               key={`left-${index}`}
-              className="inline-block origin-center rotate-[90deg] whitespace-nowrap text-[44px] font-extrabold leading-none"
+              className="inline-block origin-center rotate-[90deg] whitespace-nowrap font-[family-name:var(--font-abd)] text-[44px] font-black leading-none tracking-tight"
             >
               {label}
             </span>
@@ -177,7 +177,9 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
           <div className="mt-6 grid grid-cols-3 gap-4 pb-2 text-center">
             {FOOTER_LABELS.map((label, index) => (
               <div key={`footer-${index}`} className="flex flex-col items-center">
-                <p className="text-[36px] font-extrabold leading-none">{label}</p>
+                <p className="font-[family-name:var(--font-abd)] text-[36px] font-black leading-none tracking-tight">
+                  {label}
+                </p>
               </div>
             ))}
           </div>
@@ -185,13 +187,13 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
 
         <aside
           lang="ur"
-          className="flex flex-col items-center justify-between gap-16 pt-8 pb-2 font-[family-name:var(--font-urdu)] text-black"
+          className="flex flex-col items-center justify-between gap-16 pt-8 pb-2 text-black"
           aria-hidden="true"
         >
           {SIDE_LABELS.map((label, index) => (
             <span
               key={`right-${index}`}
-              className="inline-block origin-center rotate-[-90deg] whitespace-nowrap text-[44px] font-extrabold leading-none"
+              className="inline-block origin-center rotate-[-90deg] whitespace-nowrap font-[family-name:var(--font-abd)] text-[44px] font-black leading-none tracking-tight"
             >
               {label}
             </span>
