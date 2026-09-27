@@ -1,10 +1,9 @@
 import { randomUUID } from "crypto";
-import { promises as fs } from "fs";
-import path from "path";
 import {
   buildCertificateVerifyUrl,
   normalizeCertificateSerial,
 } from "@/lib/app-url";
+import { ensureSchema, getSql } from "@/lib/db";
 import {
   hashPassword,
   looksLikeHashedPassword,
@@ -27,125 +26,134 @@ type AuthSession = {
   createdAt: string;
 };
 
-type StoreData = {
-  users: StaffUser[];
-  sessions: AuthSession[];
-  certificates: CertificateIssue[];
-  nextSerial: number;
-  /** Historical prints already issued before this store (shown on dashboard). */
-  priorPrintCount: number;
+type UserRow = {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  certificates_printed: number;
+  created_at: string | Date;
 };
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const DATA_FILE = path.join(DATA_DIR, "store.json");
+type SessionRow = {
+  token: string;
+  name: string;
+  email: string;
+  role: string;
+  user_id: string | null;
+  created_at: string | Date;
+};
 
-async function ensureStore(): Promise<StoreData> {
-  try {
-    const raw = await fs.readFile(DATA_FILE, "utf8");
-    const parsed = JSON.parse(raw) as Partial<StoreData>;
-    const store: StoreData = {
-      users: Array.isArray(parsed.users) ? parsed.users : [],
-      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-      certificates: Array.isArray(parsed.certificates)
-        ? parsed.certificates
-        : [],
-      nextSerial:
-        typeof parsed.nextSerial === "number" && parsed.nextSerial > 0
-          ? parsed.nextSerial
-          : deriveNextSerial(parsed),
-      priorPrintCount:
-        typeof (parsed as { priorPrintCount?: number }).priorPrintCount ===
-          "number" &&
-        (parsed as { priorPrintCount?: number }).priorPrintCount! >= 0
-          ? (parsed as { priorPrintCount: number }).priorPrintCount
-          : 0,
-    };
-    return reconcileCertificateCounts(await migratePlaintextPasswords(store));
-  } catch {
-    const empty: StoreData = {
-      users: [],
-      sessions: [],
-      certificates: [],
-      nextSerial: 1,
-      priorPrintCount: 0,
-    };
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(empty, null, 2), "utf8");
-    return empty;
-  }
+type CertificateRow = {
+  id: string;
+  serial_number: string;
+  issued_date: string;
+  printed_by_user_id: string;
+  printed_by_name: string;
+  printed_by_email: string;
+  qr_payload: string;
+  created_at: string | Date;
+};
+
+function toIso(value: string | Date) {
+  if (value instanceof Date) return value.toISOString();
+  return value;
 }
 
-async function reconcileCertificateCounts(store: StoreData) {
-  let changed = false;
-
-  for (const user of store.users) {
-    const printed = store.certificates.filter(
-      (certificate) => certificate.printedByUserId === user.id,
-    ).length;
-
-    if (user.certificatesPrinted !== printed) {
-      user.certificatesPrinted = printed;
-      changed = true;
-    }
-  }
-
-  const expectedNext =
-    store.certificates.reduce((max, certificate) => {
-      const match = /(\d+)/.exec(certificate.serialNumber);
-      const value = match ? Number(match[1]) : 0;
-      return Math.max(max, value);
-    }, 0) + 1;
-
-  if (expectedNext > store.nextSerial) {
-    store.nextSerial = expectedNext;
-    changed = true;
-  }
-
-  if (changed) {
-    await writeStore(store);
-  }
-
-  return store;
+function mapUser(row: UserRow): StaffUser {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    password: row.password,
+    role: row.role as UserRole,
+    certificatesPrinted: Number(row.certificates_printed) || 0,
+    createdAt: toIso(row.created_at),
+  };
 }
 
-function deriveNextSerial(parsed: Partial<StoreData>) {
-  const fromCertificates = Array.isArray(parsed.certificates)
-    ? parsed.certificates.length
-    : 0;
-  const fromUsers = Array.isArray(parsed.users)
-    ? parsed.users.reduce(
-        (sum, user) => sum + (user.certificatesPrinted || 0),
-        0,
-      )
-    : 0;
-  return Math.max(fromCertificates, fromUsers, 0) + 1;
+function mapSession(row: SessionRow): AuthSession {
+  return {
+    token: row.token,
+    name: row.name,
+    email: row.email,
+    role: row.role as AuthRole,
+    userId: row.user_id || undefined,
+    createdAt: toIso(row.created_at),
+  };
 }
 
-async function migratePlaintextPasswords(store: StoreData) {
-  let changed = false;
-
-  for (const user of store.users) {
-    if (!looksLikeHashedPassword(user.password)) {
-      user.password = await hashPassword(user.password);
-      changed = true;
-    }
-  }
-
-  if (changed) {
-    await writeStore(store);
-  }
-
-  return store;
+function mapCertificate(row: CertificateRow): CertificateIssue {
+  return {
+    id: row.id,
+    serialNumber: row.serial_number,
+    issuedDate: row.issued_date,
+    printedByUserId: row.printed_by_user_id,
+    printedByName: row.printed_by_name,
+    printedByEmail: row.printed_by_email,
+    qrPayload: row.qr_payload,
+    createdAt: toIso(row.created_at),
+  };
 }
 
-async function writeStore(data: StoreData) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
+async function withDb<T>(fn: () => Promise<T>) {
+  await ensureSchema();
+  return fn();
+}
+
+async function getMetaNumber(key: string, fallback: number) {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT value FROM app_meta WHERE key = ${key} LIMIT 1
+  `) as { value: string }[];
+  const value = Number(rows[0]?.value);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+async function setMetaNumber(key: string, value: number) {
+  const sql = getSql();
+  await sql`
+    INSERT INTO app_meta (key, value)
+    VALUES (${key}, ${String(value)})
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+  `;
+}
+
+async function getPriorPrintCount() {
+  return getMetaNumber("prior_print_count", 0);
+}
+
+async function getNextSerial() {
+  return getMetaNumber("next_serial", 1);
+}
+
+async function countCertificates() {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT COUNT(*)::int AS count FROM certificates
+  `) as { count: number }[];
+  return Number(rows[0]?.count) || 0;
+}
+
+async function countPrintedBy(printerId: string) {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT COUNT(*)::int AS count
+    FROM certificates
+    WHERE printed_by_user_id = ${printerId}
+  `) as { count: number }[];
+  return Number(rows[0]?.count) || 0;
 }
 
 export async function getUsers() {
-  const store = await ensureStore();
-  return store.users;
+  return withDb(async () => {
+    const sql = getSql();
+    const rows = (await sql`
+      SELECT * FROM users ORDER BY created_at DESC
+    `) as UserRow[];
+    return rows.map(mapUser);
+  });
 }
 
 export async function createUser(input: {
@@ -154,38 +162,60 @@ export async function createUser(input: {
   password: string;
   role: UserRole;
 }) {
-  const store = await ensureStore();
-  const email = input.email.trim().toLowerCase();
+  return withDb(async () => {
+    const sql = getSql();
+    const email = input.email.trim().toLowerCase();
 
-  if (store.users.some((user) => user.email === email)) {
-    throw new Error("A user with this email already exists.");
-  }
+    const existing = (await sql`
+      SELECT id FROM users WHERE email = ${email} LIMIT 1
+    `) as { id: string }[];
 
-  const user: StaffUser = {
-    id: randomUUID(),
-    name: input.name.trim(),
-    email,
-    password: await hashPassword(input.password),
-    role: input.role,
-    certificatesPrinted: 0,
-    createdAt: new Date().toISOString(),
-  };
+    if (existing.length > 0) {
+      throw new Error("A user with this email already exists.");
+    }
 
-  store.users.unshift(user);
-  await writeStore(store);
-  return user;
-}
+    const user: StaffUser = {
+      id: randomUUID(),
+      name: input.name.trim(),
+      email,
+      password: await hashPassword(input.password),
+      role: input.role,
+      certificatesPrinted: 0,
+      createdAt: new Date().toISOString(),
+    };
 
-function totalCertificatesPrinted(store: StoreData) {
-  return store.priorPrintCount + store.certificates.length;
+    await sql`
+      INSERT INTO users (
+        id, name, email, password, role, certificates_printed, created_at
+      ) VALUES (
+        ${user.id},
+        ${user.name},
+        ${user.email},
+        ${user.password},
+        ${user.role},
+        ${user.certificatesPrinted},
+        ${user.createdAt}
+      )
+    `;
+
+    return user;
+  });
 }
 
 export async function getDashboardStats() {
-  const store = await ensureStore();
-  return {
-    totalPersons: store.users.length,
-    totalPrintCertificates: totalCertificatesPrinted(store),
-  };
+  return withDb(async () => {
+    const sql = getSql();
+    const userRows = (await sql`
+      SELECT COUNT(*)::int AS count FROM users
+    `) as { count: number }[];
+    const prior = await getPriorPrintCount();
+    const printed = await countCertificates();
+
+    return {
+      totalPersons: Number(userRows[0]?.count) || 0,
+      totalPrintCertificates: prior + printed,
+    };
+  });
 }
 
 export async function previewCertificatePrint(input: {
@@ -199,24 +229,27 @@ export async function previewCertificatePrint(input: {
   issuedDate?: string;
   baseUrl: string;
 }) {
-  const store = await ensureStore();
-  const printer = resolvePrinter(store, input.printer);
-  const { quantity, issuedDate } = normalizePrintInput(input);
-  const certificates = buildCertificateBatch({
-    printer,
-    quantity,
-    issuedDate,
-    startSerial: store.nextSerial,
-    baseUrl: input.baseUrl,
-  });
+  return withDb(async () => {
+    const printer = await resolvePrinter(input.printer);
+    const { quantity, issuedDate } = normalizePrintInput(input);
+    const nextSerial = await getNextSerial();
+    const prior = await getPriorPrintCount();
+    const certificates = buildCertificateBatch({
+      printer,
+      quantity,
+      issuedDate,
+      startSerial: nextSerial,
+      baseUrl: input.baseUrl,
+    });
 
-  return {
-    certificatesPrinted:
-      printer.role === "admin"
-        ? store.priorPrintCount + countPrintedBy(store, printer.id)
-        : countPrintedBy(store, printer.id),
-    certificates,
-  };
+    const printed = await countPrintedBy(printer.id);
+
+    return {
+      certificatesPrinted:
+        printer.role === "admin" ? prior + printed : printed,
+      certificates,
+    };
+  });
 }
 
 export async function recordCertificatePrint(input: {
@@ -230,36 +263,73 @@ export async function recordCertificatePrint(input: {
   issuedDate?: string;
   baseUrl: string;
 }) {
-  const store = await ensureStore();
-  const printer = resolvePrinter(store, input.printer);
-  const { quantity, issuedDate } = normalizePrintInput(input);
-  const certificates = buildCertificateBatch({
-    printer,
-    quantity,
-    issuedDate,
-    startSerial: store.nextSerial,
-    baseUrl: input.baseUrl,
-  });
+  return withDb(async () => {
+    const sql = getSql();
+    const printer = await resolvePrinter(input.printer);
+    const { quantity, issuedDate } = normalizePrintInput(input);
 
-  store.nextSerial += quantity;
-  store.certificates.unshift(...certificates);
+    const serialRows = (await sql`
+      UPDATE app_meta
+      SET value = ((value::integer) + ${quantity})::text
+      WHERE key = 'next_serial'
+      RETURNING ((value::integer) - ${quantity}) AS start_serial
+    `) as { start_serial: number }[];
 
-  if (printer.role !== "admin") {
-    const staffUser = store.users.find((user) => user.id === printer.id);
-    if (staffUser) {
-      staffUser.certificatesPrinted += quantity;
+    let startSerial = Number(serialRows[0]?.start_serial);
+    if (!Number.isFinite(startSerial)) {
+      startSerial = await getNextSerial();
+      await setMetaNumber("next_serial", startSerial + quantity);
     }
-  }
 
-  await writeStore(store);
+    const certificates = buildCertificateBatch({
+      printer,
+      quantity,
+      issuedDate,
+      startSerial,
+      baseUrl: input.baseUrl,
+    });
 
-  return {
-    certificatesPrinted:
-      printer.role === "admin"
-        ? store.priorPrintCount + countPrintedBy(store, printer.id)
-        : countPrintedBy(store, printer.id),
-    certificates,
-  };
+    for (const certificate of certificates) {
+      await sql`
+        INSERT INTO certificates (
+          id,
+          serial_number,
+          issued_date,
+          printed_by_user_id,
+          printed_by_name,
+          printed_by_email,
+          qr_payload,
+          created_at
+        ) VALUES (
+          ${certificate.id},
+          ${certificate.serialNumber},
+          ${certificate.issuedDate},
+          ${certificate.printedByUserId},
+          ${certificate.printedByName},
+          ${certificate.printedByEmail},
+          ${certificate.qrPayload},
+          ${certificate.createdAt}
+        )
+      `;
+    }
+
+    if (printer.role !== "admin") {
+      await sql`
+        UPDATE users
+        SET certificates_printed = certificates_printed + ${quantity}
+        WHERE id = ${printer.id}
+      `;
+    }
+
+    const prior = await getPriorPrintCount();
+    const printed = await countPrintedBy(printer.id);
+
+    return {
+      certificatesPrinted:
+        printer.role === "admin" ? prior + printed : printed,
+      certificates,
+    };
+  });
 }
 
 export async function getPrintedCountForAccount(input: {
@@ -268,30 +338,27 @@ export async function getPrintedCountForAccount(input: {
   email: string;
   role: AuthRole;
 }) {
-  const store = await ensureStore();
-  const printer = resolvePrinter(store, {
-    id: input.id,
-    name: input.name || (input.role === "admin" ? "Admin" : "User"),
-    email: input.email,
-    role: input.role,
+  return withDb(async () => {
+    const printer = await resolvePrinter({
+      id: input.id,
+      name: input.name || (input.role === "admin" ? "Admin" : "User"),
+      email: input.email,
+      role: input.role,
+    });
+    const printed = await countPrintedBy(printer.id);
+    if (printer.role === "admin") {
+      return (await getPriorPrintCount()) + printed;
+    }
+    return printed;
   });
-  const printed = countPrintedBy(store, printer.id);
-  if (printer.role === "admin") {
-    return store.priorPrintCount + printed;
-  }
-  return printed;
 }
 
-function countPrintedBy(store: StoreData, printerId: string) {
-  return store.certificates.filter(
-    (certificate) => certificate.printedByUserId === printerId,
-  ).length;
-}
-
-function resolvePrinter(
-  store: StoreData,
-  input: { id: string; name: string; email: string; role: AuthRole },
-) {
+async function resolvePrinter(input: {
+  id: string;
+  name: string;
+  email: string;
+  role: AuthRole;
+}) {
   if (input.role === "admin") {
     return {
       id: "admin",
@@ -301,11 +368,15 @@ function resolvePrinter(
     };
   }
 
-  const user = store.users.find(
-    (entry) =>
-      entry.id === input.id ||
-      entry.email === input.email.trim().toLowerCase(),
-  );
+  const sql = getSql();
+  const email = input.email.trim().toLowerCase();
+  const rows = (await sql`
+    SELECT * FROM users
+    WHERE id = ${input.id} OR email = ${email}
+    LIMIT 1
+  `) as UserRow[];
+
+  const user = rows[0] ? mapUser(rows[0]) : null;
 
   if (!user) {
     throw new Error("User not found.");
@@ -375,44 +446,62 @@ function buildCertificateBatch(input: {
 }
 
 export async function getCertificateBySerial(serial: string) {
-  const store = await ensureStore();
-  const needle = normalizeCertificateSerial(serial);
+  return withDb(async () => {
+    const sql = getSql();
+    const needle = normalizeCertificateSerial(serial);
+    const digits = serial.replace(/\D/g, "");
 
-  return (
-    store.certificates.find((certificate) => {
-      const stored = normalizeCertificateSerial(certificate.serialNumber);
-      return (
-        stored === needle ||
-        certificate.serialNumber === serial.trim() ||
-        certificate.serialNumber.replace(/\D/g, "") === serial.replace(/\D/g, "")
-      );
-    }) ?? null
-  );
+    const rows = (await sql`
+      SELECT * FROM certificates
+      WHERE serial_number = ${needle}
+         OR serial_number = ${serial.trim()}
+         OR regexp_replace(serial_number, '\D', '', 'g') = ${digits}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `) as CertificateRow[];
+
+    return rows[0] ? mapCertificate(rows[0]) : null;
+  });
 }
 
 export async function getUserById(id: string) {
-  const store = await ensureStore();
-  return store.users.find((user) => user.id === id) ?? null;
+  return withDb(async () => {
+    const sql = getSql();
+    const rows = (await sql`
+      SELECT * FROM users WHERE id = ${id} LIMIT 1
+    `) as UserRow[];
+    return rows[0] ? mapUser(rows[0]) : null;
+  });
 }
 
 export async function getUserByEmail(email: string) {
-  const store = await ensureStore();
-  return (
-    store.users.find((user) => user.email === email.trim().toLowerCase()) ??
-    null
-  );
+  return withDb(async () => {
+    const sql = getSql();
+    const normalized = email.trim().toLowerCase();
+    const rows = (await sql`
+      SELECT * FROM users WHERE email = ${normalized} LIMIT 1
+    `) as UserRow[];
+    return rows[0] ? mapUser(rows[0]) : null;
+  });
 }
 
 export async function findStaffByCredentials(email: string, password: string) {
-  const store = await ensureStore();
-  const user = store.users.find(
-    (entry) => entry.email === email.trim().toLowerCase(),
-  );
+  return withDb(async () => {
+    const user = await getUserByEmail(email);
+    if (!user) return null;
 
-  if (!user) return null;
+    if (!looksLikeHashedPassword(user.password)) {
+      const hashed = await hashPassword(user.password);
+      const sql = getSql();
+      await sql`
+        UPDATE users SET password = ${hashed} WHERE id = ${user.id}
+      `;
+      user.password = hashed;
+    }
 
-  const valid = await verifyPassword(password, user.password);
-  return valid ? user : null;
+    const valid = await verifyPassword(password, user.password);
+    return valid ? user : null;
+  });
 }
 
 export async function createSession(input: {
@@ -422,19 +511,21 @@ export async function createSession(input: {
   role: AuthRole;
   userId?: string;
 }) {
-  const store = await ensureStore();
-  store.sessions = store.sessions.filter(
-    (session) => session.token !== input.token,
-  );
-  store.sessions.push({
-    token: input.token,
-    name: input.name,
-    email: input.email,
-    role: input.role,
-    userId: input.userId,
-    createdAt: new Date().toISOString(),
+  return withDb(async () => {
+    const sql = getSql();
+    await sql`DELETE FROM sessions WHERE token = ${input.token}`;
+    await sql`
+      INSERT INTO sessions (token, name, email, role, user_id, created_at)
+      VALUES (
+        ${input.token},
+        ${input.name},
+        ${input.email},
+        ${input.role},
+        ${input.userId ?? null},
+        ${new Date().toISOString()}
+      )
+    `;
   });
-  await writeStore(store);
 }
 
 /** @deprecated use createSession */
@@ -447,8 +538,13 @@ export async function createAdminSession(input: {
 }
 
 export async function getSession(token: string) {
-  const store = await ensureStore();
-  return store.sessions.find((session) => session.token === token) ?? null;
+  return withDb(async () => {
+    const sql = getSql();
+    const rows = (await sql`
+      SELECT * FROM sessions WHERE token = ${token} LIMIT 1
+    `) as SessionRow[];
+    return rows[0] ? mapSession(rows[0]) : null;
+  });
 }
 
 /** @deprecated use getSession */
@@ -457,11 +553,13 @@ export async function getAdminSession(token: string) {
 }
 
 export async function removeSession(token: string) {
-  const store = await ensureStore();
-  const before = store.sessions.length;
-  store.sessions = store.sessions.filter((session) => session.token !== token);
-  await writeStore(store);
-  return before !== store.sessions.length;
+  return withDb(async () => {
+    const sql = getSql();
+    const result = (await sql`
+      DELETE FROM sessions WHERE token = ${token} RETURNING token
+    `) as { token: string }[];
+    return result.length > 0;
+  });
 }
 
 /** @deprecated use removeSession */
@@ -478,50 +576,67 @@ export async function updateUser(
     password?: string;
   },
 ) {
-  const store = await ensureStore();
-  const index = store.users.findIndex((user) => user.id === id);
+  return withDb(async () => {
+    const sql = getSql();
+    const currentRows = (await sql`
+      SELECT * FROM users WHERE id = ${id} LIMIT 1
+    `) as UserRow[];
 
-  if (index === -1) {
-    throw new Error("User not found.");
-  }
+    if (!currentRows[0]) {
+      throw new Error("User not found.");
+    }
 
-  const email = input.email.trim().toLowerCase();
-  const emailTaken = store.users.some(
-    (user) => user.email === email && user.id !== id,
-  );
+    const current = mapUser(currentRows[0]);
+    const email = input.email.trim().toLowerCase();
 
-  if (emailTaken) {
-    throw new Error("A user with this email already exists.");
-  }
+    const taken = (await sql`
+      SELECT id FROM users WHERE email = ${email} AND id <> ${id} LIMIT 1
+    `) as { id: string }[];
 
-  const current = store.users[index];
-  const updated: StaffUser = {
-    ...current,
-    name: input.name.trim(),
-    email,
-    role: input.role,
-    password:
+    if (taken.length > 0) {
+      throw new Error("A user with this email already exists.");
+    }
+
+    const password =
       input.password && input.password.length > 0
         ? await hashPassword(input.password)
-        : current.password,
-  };
+        : current.password;
 
-  store.users[index] = updated;
-  await writeStore(store);
-  return updated;
+    const updated: StaffUser = {
+      ...current,
+      name: input.name.trim(),
+      email,
+      role: input.role,
+      password,
+    };
+
+    await sql`
+      UPDATE users
+      SET
+        name = ${updated.name},
+        email = ${updated.email},
+        role = ${updated.role},
+        password = ${updated.password}
+      WHERE id = ${id}
+    `;
+
+    return updated;
+  });
 }
 
 export async function deleteUser(id: string) {
-  const store = await ensureStore();
-  const index = store.users.findIndex((user) => user.id === id);
+  return withDb(async () => {
+    const sql = getSql();
+    const rows = (await sql`
+      DELETE FROM users WHERE id = ${id} RETURNING *
+    `) as UserRow[];
 
-  if (index === -1) {
-    throw new Error("User not found.");
-  }
+    if (!rows[0]) {
+      throw new Error("User not found.");
+    }
 
-  const [removed] = store.users.splice(index, 1);
-  await writeStore(store);
-  return removed;
+    return mapUser(rows[0]);
+  });
 }
 
 export function toPublicUser(user: StaffUser) {
@@ -536,27 +651,28 @@ export function toPublicUser(user: StaffUser) {
 }
 
 export async function getDirectoryUsers() {
-  const store = await ensureStore();
-  const adminPrinted =
-    store.priorPrintCount +
-    store.certificates.filter(
-      (certificate) => certificate.printedByUserId === "admin",
-    ).length;
+  return withDb(async () => {
+    const prior = await getPriorPrintCount();
+    const adminPrinted = prior + (await countPrintedBy("admin"));
+    const users = await getUsers();
 
-  const adminEntry = {
-    id: "admin",
-    name: process.env.ADMIN_NAME?.trim() || "Admin",
-    email: (process.env.ADMIN_EMAIL ?? "admin@session.com").trim().toLowerCase(),
-    role: "admin" as const,
-    certificatesPrinted: adminPrinted,
-    createdAt: "",
-    readonly: true,
-  };
+    const adminEntry = {
+      id: "admin",
+      name: process.env.ADMIN_NAME?.trim() || "Admin",
+      email: (
+        process.env.ADMIN_EMAIL ?? "admin@session.com"
+      ).trim().toLowerCase(),
+      role: "admin" as const,
+      certificatesPrinted: adminPrinted,
+      createdAt: "",
+      readonly: true,
+    };
 
-  const staffEntries = store.users.map((user) => ({
-    ...toPublicUser(user),
-    readonly: false as const,
-  }));
+    const staffEntries = users.map((user) => ({
+      ...toPublicUser(user),
+      readonly: false as const,
+    }));
 
-  return [adminEntry, ...staffEntries];
+    return [adminEntry, ...staffEntries];
+  });
 }
