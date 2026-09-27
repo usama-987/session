@@ -65,7 +65,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
             ڈسٹرکٹ بار ایسوسی ایشن، بہاول نگر
           </p>
           <div
-            className="certificate-ticket-hex mt-3 flex h-[120px] w-[138px] items-center justify-center"
+            className="certificate-ticket-hex mt-3 mb-4 flex h-[120px] w-[138px] items-center justify-center"
             aria-hidden="true"
           >
             <svg
@@ -115,7 +115,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         <section
           lang="ur"
           dir="rtl"
-          className="flex min-w-0 flex-col px-4 pt-1 font-[family-name:var(--font-urdu)] text-[18px] leading-9 text-black"
+          className="flex min-w-0 flex-col px-4 pt-4 font-[family-name:var(--font-urdu)] text-[18px] leading-9 text-black"
         >
           <div className="w-full">
             <p className="whitespace-nowrap text-right">
