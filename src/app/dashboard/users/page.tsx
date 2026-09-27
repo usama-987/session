@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { EditUserForm } from "@/components/common/EditUserForm";
 import { UsersTable } from "@/components/common/UsersTable";
 import { apiFetch } from "@/lib/api-client";
-import type { PublicStaffUser } from "@/lib/types";
+import type { DirectoryUser, PublicStaffUser } from "@/lib/types";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<PublicStaffUser[]>([]);
+  const [users, setUsers] = useState<DirectoryUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editingUser, setEditingUser] = useState<PublicStaffUser | null>(null);
@@ -20,7 +20,7 @@ export default function UsersPage() {
     try {
       const response = await apiFetch("/api/users");
       const data = (await response.json()) as {
-        users?: PublicStaffUser[];
+        users?: DirectoryUser[];
         message?: string;
       };
 
@@ -48,7 +48,8 @@ export default function UsersPage() {
           Users
         </h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          View, update, or delete accounts created from the Role section.
+          Admin print totals are shown as view-only. Staff accounts can be edited
+          or deleted. Overall total is on the Dashboard.
         </p>
       </header>
 
@@ -72,7 +73,9 @@ export default function UsersPage() {
             onUpdated={(updated) => {
               setUsers((current) =>
                 current.map((user) =>
-                  user.id === updated.id ? updated : user,
+                  user.id === updated.id
+                    ? { ...updated, readonly: false }
+                    : user,
                 ),
               );
               setEditingUser(null);
@@ -86,8 +89,16 @@ export default function UsersPage() {
         users={users}
         loading={loading}
         onEdit={(user) => {
+          if (user.readonly || user.role === "admin") return;
           setSuccess("");
-          setEditingUser(user);
+          setEditingUser({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: "print_certificates",
+            certificatesPrinted: user.certificatesPrinted,
+            createdAt: user.createdAt,
+          });
         }}
         onDeleted={(userId) => {
           setUsers((current) => current.filter((user) => user.id !== userId));

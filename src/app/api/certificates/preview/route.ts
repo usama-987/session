@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { attachQrCodes } from "@/lib/certificates";
-import { recordCertificatePrint } from "@/lib/store";
+import { previewCertificatePrint } from "@/lib/store";
 
 export async function POST(request: Request) {
   const auth = await requireAuth(request);
@@ -28,16 +28,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { certificates, certificatesPrinted } = await recordCertificatePrint({
-      printer: {
-        id: auth.session.userId || auth.session.role,
-        name: auth.session.name,
-        email: auth.session.email,
-        role: auth.session.role,
+    const { certificates, certificatesPrinted } = await previewCertificatePrint(
+      {
+        printer: {
+          id: auth.session.userId || auth.session.role,
+          name: auth.session.name,
+          email: auth.session.email,
+          role: auth.session.role,
+        },
+        quantity,
+        issuedDate: body.issuedDate,
       },
-      quantity,
-      issuedDate: body.issuedDate,
-    });
+    );
 
     const printItems = await attachQrCodes(
       certificates.map((certificate) => ({
@@ -50,14 +52,15 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({
-      message: `${quantity} certificate${quantity === 1 ? "" : "s"} printed successfully.`,
+      message: `${quantity} certificate${quantity === 1 ? "" : "s"} ready for preview.`,
       quantity,
       certificatesPrinted,
       certificates: printItems,
+      draft: true,
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Unable to record print.";
+      error instanceof Error ? error.message : "Unable to create preview.";
     const status = message.includes("not found")
       ? 404
       : message.includes("not allowed")

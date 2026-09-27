@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { CertificatePrintPanel } from "@/components/common/CertificatePrintPanel";
 import { apiFetch } from "@/lib/api-client";
-import type { PublicStaffUser } from "@/lib/types";
+import { getAuthUser } from "@/lib/auth";
 
 export default function AdminCertificatesPage() {
-  const [users, setUsers] = useState<PublicStaffUser[]>([]);
   const [totalPrinted, setTotalPrinted] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const user = getAuthUser();
 
   useEffect(() => {
     void (async () => {
@@ -17,32 +17,18 @@ export default function AdminCertificatesPage() {
       setError("");
 
       try {
-        const [usersRes, statsRes] = await Promise.all([
-          apiFetch("/api/users"),
-          apiFetch("/api/certificates/stats"),
-        ]);
-
-        const usersData = (await usersRes.json()) as {
-          users?: PublicStaffUser[];
-          message?: string;
-        };
-        const statsData = (await statsRes.json()) as {
+        const response = await apiFetch("/api/certificates/stats");
+        const data = (await response.json()) as {
           totalPrintCertificates?: number;
           message?: string;
         };
 
-        if (!usersRes.ok) {
-          setError(usersData.message || "Unable to load users.");
+        if (!response.ok) {
+          setError(data.message || "Unable to load certificate stats.");
           return;
         }
 
-        if (!statsRes.ok) {
-          setError(statsData.message || "Unable to load certificate stats.");
-          return;
-        }
-
-        setUsers(usersData.users ?? []);
-        setTotalPrinted(statsData.totalPrintCertificates ?? 0);
+        setTotalPrinted(data.totalPrintCertificates ?? 0);
       } catch {
         setError("Unable to reach the server. Please try again.");
       } finally {
@@ -61,8 +47,8 @@ export default function AdminCertificatesPage() {
             Certificates
           </h1>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            Select a user, choose how many certificates to print, then print the
-            batch.
+            Welcome{user?.name ? `, ${user.name}` : ""}. Certificates print
+            under your admin account.
           </p>
         </header>
 
@@ -76,12 +62,6 @@ export default function AdminCertificatesPage() {
           <p className="text-sm text-[var(--muted)]">Loading print studio...</p>
         ) : (
           <CertificatePrintPanel
-            mode="admin"
-            staffOptions={users.map((user) => ({
-              id: user.id,
-              name: user.name,
-              email: user.email,
-            }))}
             initialTotal={totalPrinted}
             onPrinted={setTotalPrinted}
           />

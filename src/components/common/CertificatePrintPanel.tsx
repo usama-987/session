@@ -1,25 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { CertificatePreview } from "@/components/common/CertificatePreview";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { Select } from "@/components/ui/Select";
 import { apiFetch } from "@/lib/api-client";
 import type { CertificatePrintItem } from "@/lib/types";
 
 const QUICK_AMOUNTS = [1, 5, 10, 25, 50];
 
-type StaffOption = {
-  id: string;
-  name: string;
-  email: string;
-};
-
 type CertificatePrintPanelProps = {
-  mode: "staff" | "admin";
-  staffOptions?: StaffOption[];
   initialTotal?: number;
   onPrinted?: (total: number) => void;
 };
@@ -29,19 +20,15 @@ function todayInputValue() {
 }
 
 export function CertificatePrintPanel({
-  mode,
-  staffOptions = [],
   initialTotal = 0,
   onPrinted,
 }: CertificatePrintPanelProps) {
   const [quantity, setQuantity] = useState(1);
   const [customMode, setCustomMode] = useState(false);
   const [issuedDate, setIssuedDate] = useState(todayInputValue);
-  const [selectedUserId, setSelectedUserId] = useState(
-    staffOptions[0]?.id ?? "",
-  );
   const [totalPrinted, setTotalPrinted] = useState(initialTotal);
   const [certificates, setCertificates] = useState<CertificatePrintItem[]>([]);
+  const [isDraft, setIsDraft] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -50,67 +37,53 @@ export function CertificatePrintPanel({
     setTotalPrinted(initialTotal);
   }, [initialTotal]);
 
-  useEffect(() => {
-    if (!selectedUserId && staffOptions[0]?.id) {
-      setSelectedUserId(staffOptions[0].id);
-    }
-  }, [selectedUserId, staffOptions]);
+  function getRequestBody() {
+    return { quantity, issuedDate };
+  }
 
-  const selectedUser = useMemo(
-    () => staffOptions.find((user) => user.id === selectedUserId) ?? null,
-    [selectedUserId, staffOptions],
-  );
-
-  async function handlePrint() {
-    setError("");
-    setSuccess("");
-
+  function validateForm() {
     if (quantity < 1 || quantity > 100) {
       setError("Choose between 1 and 100 certificates.");
-      return;
+      return false;
     }
 
     if (!issuedDate) {
       setError("Please select a certificate date.");
-      return;
+      return false;
     }
 
-    if (mode === "admin" && !selectedUserId) {
-      setError("Select a user to print certificates for.");
-      return;
-    }
+    return true;
+  }
+
+  async function handleGenerate() {
+    setError("");
+    setSuccess("");
+
+    if (!validateForm()) return;
 
     setLoading(true);
 
     try {
-      const response = await apiFetch("/api/certificates/print", {
+      const response = await apiFetch("/api/certificates/preview", {
         method: "POST",
-        body: JSON.stringify({
-          quantity,
-          issuedDate,
-          userId: mode === "admin" ? selectedUserId : undefined,
-        }),
+        body: JSON.stringify(getRequestBody()),
       });
 
       const data = (await response.json()) as {
         message?: string;
-        certificatesPrinted?: number;
-        quantity?: number;
         certificates?: CertificatePrintItem[];
       };
 
       if (!response.ok) {
-        setError(data.message || "Unable to print certificates.");
+        setError(data.message || "Unable to generate preview.");
         return;
       }
 
-      const nextTotal = data.certificatesPrinted ?? totalPrinted + quantity;
-      setTotalPrinted(nextTotal);
-      onPrinted?.(nextTotal);
       setCertificates(data.certificates ?? []);
+      setIsDraft(true);
       setSuccess(
         data.message ||
-          `${quantity} certificate${quantity === 1 ? "" : "s"} ready to print.`,
+          `${quantity} certificate${quantity === 1 ? "" : "s"} ready for preview.`,
       );
 
       window.setTimeout(() => {
@@ -123,6 +96,49 @@ export function CertificatePrintPanel({
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleConfirmPrint() {
+    setError("");
+    setSuccess("");
+
+    if (!validateForm()) return;
+
+    const response = await apiFetch("/api/certificates/print", {
+      method: "POST",
+      body: JSON.stringify(getRequestBody()),
+    });
+
+    const data = (await response.json()) as {
+      message?: string;
+      certificatesPrinted?: number;
+      certificates?: CertificatePrintItem[];
+    };
+
+    if (!response.ok) {
+      setError(data.message || "Unable to print certificates.");
+      throw new Error(data.message || "Print failed");
+    }
+
+    const nextTotal = data.certificatesPrinted ?? totalPrinted + quantity;
+    setTotalPrinted(nextTotal);
+    onPrinted?.(nextTotal);
+    setCertificates(data.certificates ?? []);
+    setIsDraft(false);
+    setSuccess(
+      data.message ||
+        `${quantity} certificate${quantity === 1 ? "" : "s"} printed successfully.`,
+    );
+
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+    window.print();
+  }
+
+  function handleClosePreview() {
+    setCertificates([]);
+    setIsDraft(false);
+    setSuccess("");
+    setError("");
   }
 
   return (
@@ -146,8 +162,8 @@ export function CertificatePrintPanel({
               Generate printable certificates
             </h2>
             <p className="mt-3 max-w-md text-sm leading-6 text-[var(--muted)]">
-              Set the date, choose quantity, then generate certificates with
-              unique serial numbers and QR codes ready for browser print.
+              Certificates are printed under your signed-in account. Serial
+              numbers update only when you click Print certificates.
             </p>
 
             <div className="mt-8 grid grid-cols-2 gap-3 sm:max-w-sm">
@@ -161,7 +177,7 @@ export function CertificatePrintPanel({
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[#f7fbfa] p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
-                  Total printed
+                  Your printed total
                 </p>
                 <p className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-[var(--brand)]">
                   {totalPrinted}
@@ -171,32 +187,6 @@ export function CertificatePrintPanel({
           </div>
 
           <div className="rounded-2xl border border-[var(--border)] bg-white/80 p-5 backdrop-blur-sm sm:p-6">
-            {mode === "admin" ? (
-              <div className="mb-5">
-                <Label htmlFor="print-user">Print for user</Label>
-                <Select
-                  id="print-user"
-                  value={selectedUserId}
-                  onChange={(event) => setSelectedUserId(event.target.value)}
-                >
-                  {staffOptions.length === 0 ? (
-                    <option value="">No users available</option>
-                  ) : (
-                    staffOptions.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} ({user.email})
-                      </option>
-                    ))
-                  )}
-                </Select>
-                {selectedUser ? (
-                  <p className="mt-2 text-xs text-[var(--muted)]">
-                    Selected: {selectedUser.name}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-
             <div className="mb-5">
               <Label htmlFor="issued-date">Certificate date</Label>
               <Input
@@ -273,6 +263,7 @@ export function CertificatePrintPanel({
             {success ? (
               <p className="mt-4 rounded-lg bg-[var(--success-soft)] px-3 py-2 text-sm text-[var(--success)]">
                 {success}
+                {isDraft ? " (not counted yet)" : ""}
               </p>
             ) : null}
 
@@ -281,8 +272,7 @@ export function CertificatePrintPanel({
               className="mt-6 w-full"
               loading={loading}
               loadingText="Generating..."
-              onClick={() => void handlePrint()}
-              disabled={mode === "admin" && staffOptions.length === 0}
+              onClick={() => void handleGenerate()}
             >
               Generate {quantity} certificate{quantity === 1 ? "" : "s"}
             </Button>
@@ -293,7 +283,8 @@ export function CertificatePrintPanel({
       <div id="certificate-preview">
         <CertificatePreview
           certificates={certificates}
-          onClose={() => setCertificates([])}
+          onClose={handleClosePreview}
+          onConfirmPrint={handleConfirmPrint}
         />
       </div>
     </>

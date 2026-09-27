@@ -15,6 +15,13 @@ export async function PUT(request: Request, context: RouteContext) {
 
   const { id } = await context.params;
 
+  if (id === "admin") {
+    return NextResponse.json(
+      { message: "Admin account cannot be edited." },
+      { status: 403 },
+    );
+  }
+
   let body: {
     name?: string;
     email?: string;
@@ -86,6 +93,13 @@ export async function DELETE(request: Request, context: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { id } = await context.params;
+
+  if (id === "admin") {
+    return NextResponse.json(
+      { message: "Admin account cannot be deleted." },
+      { status: 403 },
+    );
+  }
 
   try {
     await deleteUser(id);

@@ -20,6 +20,16 @@ export type PublicStaffUser = {
   createdAt: string;
 };
 
+export type DirectoryUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: AuthRole;
+  certificatesPrinted: number;
+  createdAt: string;
+  readonly: boolean;
+};
+
 export type DashboardStats = {
   totalPersons: number;
   totalPrintCertificates: number;
@@ -53,6 +63,7 @@ export const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "print_certificates", label: "Print Certificates" },
 ];
 
-export function roleLabel(role: UserRole) {
+export function roleLabel(role: AuthRole) {
+  if (role === "admin") return "Admin";
   return ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
 }

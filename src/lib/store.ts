@@ -48,7 +48,7 @@ async function ensureStore(): Promise<StoreData> {
           ? parsed.nextSerial
           : deriveNextSerial(parsed),
     };
-    return migratePlaintextPasswords(store);
+    return reconcileCertificateCounts(await migratePlaintextPasswords(store));
   } catch {
     const empty: StoreData = {
       users: [],
@@ -60,6 +60,39 @@ async function ensureStore(): Promise<StoreData> {
     await fs.writeFile(DATA_FILE, JSON.stringify(empty, null, 2), "utf8");
     return empty;
   }
+}
+
+async function reconcileCertificateCounts(store: StoreData) {
+  let changed = false;
+
+  for (const user of store.users) {
+    const printed = store.certificates.filter(
+      (certificate) => certificate.printedByUserId === user.id,
+    ).length;
+
+    if (user.certificatesPrinted !== printed) {
+      user.certificatesPrinted = printed;
+      changed = true;
+    }
+  }
+
+  const expectedNext =
+    store.certificates.reduce((max, certificate) => {
+      const match = /^CERT-(\d+)$/.exec(certificate.serialNumber);
+      const value = match ? Number(match[1]) : 0;
+      return Math.max(max, value);
+    }, 0) + 1;
+
+  if (expectedNext > store.nextSerial) {
+    store.nextSerial = expectedNext;
+    changed = true;
+  }
+
+  if (changed) {
+    await writeStore(store);
+  }
+
+  return store;
 }
 
 function deriveNextSerial(parsed: Partial<StoreData>) {
@@ -131,27 +164,116 @@ export async function createUser(input: {
 }
 
 export async function getDashboardStats() {
-  const users = await getUsers();
+  const store = await ensureStore();
   return {
-    totalPersons: users.length,
-    totalPrintCertificates: users.reduce(
-      (sum, user) => sum + (user.certificatesPrinted || 0),
-      0,
-    ),
+    totalPersons: store.users.length,
+    totalPrintCertificates: store.certificates.length,
   };
 }
 
-export async function recordCertificatePrint(input: {
-  userId?: string;
-  email?: string;
+export async function previewCertificatePrint(input: {
+  printer: {
+    id: string;
+    name: string;
+    email: string;
+    role: AuthRole;
+  };
   quantity?: number;
   issuedDate?: string;
 }) {
   const store = await ensureStore();
+  const printer = resolvePrinter(store, input.printer);
+  const { quantity, issuedDate } = normalizePrintInput(input);
+  const certificates = buildCertificateBatch({
+    printer,
+    quantity,
+    issuedDate,
+    startSerial: store.nextSerial,
+  });
+
+  return {
+    certificatesPrinted: countPrintedBy(store, printer.id),
+    certificates,
+  };
+}
+
+export async function recordCertificatePrint(input: {
+  printer: {
+    id: string;
+    name: string;
+    email: string;
+    role: AuthRole;
+  };
+  quantity?: number;
+  issuedDate?: string;
+}) {
+  const store = await ensureStore();
+  const printer = resolvePrinter(store, input.printer);
+  const { quantity, issuedDate } = normalizePrintInput(input);
+  const certificates = buildCertificateBatch({
+    printer,
+    quantity,
+    issuedDate,
+    startSerial: store.nextSerial,
+  });
+
+  store.nextSerial += quantity;
+  store.certificates.unshift(...certificates);
+
+  if (printer.role !== "admin") {
+    const staffUser = store.users.find((user) => user.id === printer.id);
+    if (staffUser) {
+      staffUser.certificatesPrinted += quantity;
+    }
+  }
+
+  await writeStore(store);
+
+  return {
+    certificatesPrinted: countPrintedBy(store, printer.id),
+    certificates,
+  };
+}
+
+export async function getPrintedCountForAccount(input: {
+  id: string;
+  name?: string;
+  email: string;
+  role: AuthRole;
+}) {
+  const store = await ensureStore();
+  const printer = resolvePrinter(store, {
+    id: input.id,
+    name: input.name || (input.role === "admin" ? "Admin" : "User"),
+    email: input.email,
+    role: input.role,
+  });
+  return countPrintedBy(store, printer.id);
+}
+
+function countPrintedBy(store: StoreData, printerId: string) {
+  return store.certificates.filter(
+    (certificate) => certificate.printedByUserId === printerId,
+  ).length;
+}
+
+function resolvePrinter(
+  store: StoreData,
+  input: { id: string; name: string; email: string; role: AuthRole },
+) {
+  if (input.role === "admin") {
+    return {
+      id: "admin",
+      name: input.name || "Admin",
+      email: input.email,
+      role: "admin" as const,
+    };
+  }
+
   const user = store.users.find(
     (entry) =>
-      entry.id === input.userId ||
-      entry.email === input.email?.trim().toLowerCase(),
+      entry.id === input.id ||
+      entry.email === input.email.trim().toLowerCase(),
   );
 
   if (!user) {
@@ -162,6 +284,18 @@ export async function recordCertificatePrint(input: {
     throw new Error("This user is not allowed to print certificates.");
   }
 
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+}
+
+function normalizePrintInput(input: {
+  quantity?: number;
+  issuedDate?: string;
+}) {
   const quantity = Math.floor(input.quantity ?? 1);
   if (quantity < 1 || quantity > 100) {
     throw new Error("Quantity must be between 1 and 100.");
@@ -174,36 +308,42 @@ export async function recordCertificatePrint(input: {
     throw new Error("Issued date must be in YYYY-MM-DD format.");
   }
 
+  return { quantity, issuedDate };
+}
+
+function buildCertificateBatch(input: {
+  printer: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  quantity: number;
+  issuedDate: string;
+  startSerial: number;
+}) {
   const createdAt = new Date().toISOString();
   const batch: CertificateIssue[] = [];
 
-  for (let index = 0; index < quantity; index += 1) {
-    const serialNumber = formatSerialNumber(store.nextSerial);
-    store.nextSerial += 1;
+  for (let index = 0; index < input.quantity; index += 1) {
+    const serialNumber = formatSerialNumber(input.startSerial + index);
 
-    const certificate: CertificateIssue = {
+    batch.push({
       id: randomUUID(),
       serialNumber,
-      issuedDate,
-      printedByUserId: user.id,
-      printedByName: user.name,
-      printedByEmail: user.email,
+      issuedDate: input.issuedDate,
+      printedByUserId: input.printer.id,
+      printedByName: input.printer.name,
+      printedByEmail: input.printer.email,
       qrPayload: JSON.stringify({
         serial: serialNumber,
-        date: issuedDate,
-        issuer: user.email,
+        date: input.issuedDate,
+        issuer: input.printer.email,
       }),
       createdAt,
-    };
-
-    batch.push(certificate);
-    store.certificates.unshift(certificate);
+    });
   }
 
-  user.certificatesPrinted += quantity;
-  await writeStore(store);
-
-  return { user, certificates: batch };
+  return batch;
 }
 
 export async function getUserById(id: string) {
@@ -349,4 +489,28 @@ export function toPublicUser(user: StaffUser) {
     certificatesPrinted: user.certificatesPrinted,
     createdAt: user.createdAt,
   };
+}
+
+export async function getDirectoryUsers() {
+  const store = await ensureStore();
+  const adminPrinted = store.certificates.filter(
+    (certificate) => certificate.printedByUserId === "admin",
+  ).length;
+
+  const adminEntry = {
+    id: "admin",
+    name: process.env.ADMIN_NAME?.trim() || "Admin",
+    email: (process.env.ADMIN_EMAIL ?? "admin@session.com").trim().toLowerCase(),
+    role: "admin" as const,
+    certificatesPrinted: adminPrinted,
+    createdAt: "",
+    readonly: true,
+  };
+
+  const staffEntries = store.users.map((user) => ({
+    ...toPublicUser(user),
+    readonly: false as const,
+  }));
+
+  return [adminEntry, ...staffEntries];
 }

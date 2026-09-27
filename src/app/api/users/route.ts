@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/api-auth";
-import { createUser, getUsers, toPublicUser } from "@/lib/store";
+import { createUser, getDirectoryUsers, toPublicUser } from "@/lib/store";
 import type { UserRole } from "@/lib/types";
 
 const ALLOWED_ROLES: UserRole[] = ["print_certificates"];
@@ -9,10 +9,8 @@ export async function GET(request: Request) {
   const auth = await requireAdminAuth(request);
   if (!auth.ok) return auth.response;
 
-  const users = await getUsers();
-  return NextResponse.json({
-    users: users.map(toPublicUser),
-  });
+  const users = await getDirectoryUsers();
+  return NextResponse.json({ users });
 }
 
 export async function POST(request: Request) {

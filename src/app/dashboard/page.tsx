@@ -55,7 +55,11 @@ export default function DashboardPage() {
         totalPersons: statsData.totalPersons ?? 0,
         totalPrintCertificates: statsData.totalPrintCertificates ?? 0,
       });
-      setAccounts(usersData.users ?? []);
+      setAccounts(
+        (usersData.users ?? []).filter(
+          (user) => user.id !== "admin" && !("readonly" in user && user.readonly),
+        ),
+      );
     } catch {
       setError("Unable to reach the server. Please try again.");
     } finally {
@@ -93,7 +97,7 @@ export default function DashboardPage() {
         <StatCard
           label="Total print certificates"
           value={loading ? "—" : stats.totalPrintCertificates}
-          hint="Certificates printed across all roles"
+          hint="All certificates printed by every user"
         />
       </section>
 

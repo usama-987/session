@@ -44,7 +44,6 @@ export default function PrintPage() {
           <p className="text-sm text-[var(--muted)]">Loading print studio...</p>
         ) : (
           <CertificatePrintPanel
-            mode="staff"
             initialTotal={totalPrinted}
             onPrinted={setTotalPrinted}
           />
