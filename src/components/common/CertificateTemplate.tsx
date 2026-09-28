@@ -65,36 +65,55 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
             ڈسٹرکٹ بار ایسوسی ایشن، بہاول نگر
           </p>
           <div
-            className="certificate-ticket-hex mt-3 mb-4 flex h-[120px] w-[138px] items-center justify-center"
-            aria-hidden="true"
+            dir="ltr"
+            className="mt-3 mb-4 flex w-full items-center justify-center gap-36"
           >
-            <svg
-              viewBox="0 0 100 87"
-              className="h-full w-full overflow-visible"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+            <p
+              lang="ur"
+              dir="rtl"
+              className="shrink-0 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
             >
-              <polygon
-                points="25,1.5 75,1.5 98.5,43.5 75,85.5 25,85.5 1.5,43.5"
-                stroke="black"
-                strokeWidth="2"
-                strokeLinejoin="miter"
+              سیکرٹری
+            </p>
+            <div
+              className="certificate-ticket-hex flex h-[120px] w-[138px] shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
+              <svg
+                viewBox="0 0 100 87"
+                className="h-full w-full overflow-visible"
                 fill="none"
-              />
-            </svg>
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <polygon
+                  points="25,1.5 75,1.5 98.5,43.5 75,85.5 25,85.5 1.5,43.5"
+                  stroke="black"
+                  strokeWidth="2"
+                  strokeLinejoin="miter"
+                  fill="none"
+                />
+              </svg>
+            </div>
+            <p
+              lang="ur"
+              dir="rtl"
+              className="shrink-0 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
+            >
+              صدر
+            </p>
           </div>
         </div>
 
-        <div aria-hidden="true" />
+        <div className="flex flex-col items-end justify-start pt-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/watermark.png"
+            alt="District Bar Association Bahawalnagar"
+            className="h-[88px] w-[88px] object-contain"
+            draggable={false}
+          />
+        </div>
       </header>
-
-      <p
-        lang="ur"
-        dir="rtl"
-        className="pointer-events-none absolute right-8 top-[8rem] z-10 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
-      >
-        صدر
-      </p>
 
       <div className="relative z-[1] mt-2 grid grid-cols-[2.75rem_1fr_2.75rem] items-stretch gap-x-3 gap-y-4">
         <aside
