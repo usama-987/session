@@ -7,11 +7,10 @@ type CertificateTemplateProps = {
 const SIDE_LABELS = Array.from({ length: 5 }, () => "العبد");
 const FOOTER_LABELS = Array.from({ length: 3 }, () => "العبد");
 
-function DashField({ width = "10rem" }: { width?: string }) {
+function DashField({ className = "" }: { className?: string }) {
   return (
     <span
-      className="mx-1 inline-block translate-y-[-2px] border-b border-dashed border-black"
-      style={{ width, minWidth: width }}
+      className={`mx-1 inline-block min-w-[3rem] flex-1 translate-y-[-2px] border-b border-dashed border-black ${className}`}
       aria-hidden="true"
     />
   );
@@ -27,7 +26,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
   const serialLabel = displaySerialNumber(certificate.serialNumber);
 
   return (
-    <article className="certificate-sheet relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#eeb8c8] px-3 py-4 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
+    <article className="certificate-sheet relative mx-auto flex min-h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#eeb8c8] px-5 py-4 text-black shadow-[0_18px_40px_-28px_rgba(15,61,62,0.45)]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/watermark.png"
@@ -37,8 +36,11 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         draggable={false}
       />
 
-      <header className="relative z-[1] mx-auto grid w-[calc(100%-7.5rem)] grid-cols-[1fr_1.5fr_1fr] items-stretch gap-2 px-2">
-        <div dir="ltr" className="flex flex-col items-start gap-1 pt-1 text-left">
+      <header
+        dir="ltr"
+        className="relative z-[1] grid w-full grid-cols-[1fr_1.5fr_1fr] items-stretch gap-2 px-2"
+      >
+        <div className="flex flex-col items-start gap-1 pt-1 text-left">
           <p className="font-[family-name:var(--font-body)] text-[12px] font-bold leading-tight tracking-wide">
             DATED: {dated}
           </p>
@@ -114,7 +116,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         </div>
       </header>
 
-      <div className="relative z-[1] mt-2 grid grid-cols-[2.75rem_1fr_2.75rem] items-stretch gap-x-3 gap-y-4">
+      <div className="relative z-[1] mt-2 grid grid-cols-[2.75rem_1fr_2.75rem] items-stretch gap-x-1 gap-y-4">
         <aside
           lang="ur"
           className="flex flex-col items-center justify-between py-1 text-black"
@@ -133,47 +135,47 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         <section
           lang="ur"
           dir="rtl"
-          className="flex min-w-0 flex-col px-4 pt-4 font-[family-name:var(--font-urdu)] text-[18px] leading-9 text-black"
+          className="flex min-w-0 flex-col px-2 pt-4 font-[family-name:var(--font-urdu)] text-[18px] leading-9 text-black"
         >
-          <div className="w-full">
-            <p className="whitespace-nowrap text-right">
-              <span>بعدالت جناب</span>
-              <DashField width="11rem" />
-              <span>منجانب</span>
-              <DashField width="11rem" />
+          <div className="flex w-full flex-col gap-2">
+            <p className="flex w-full items-end whitespace-nowrap">
+              <span className="shrink-0">بعدالت جناب</span>
+              <DashField />
+              <span className="shrink-0">منجانب</span>
+              <DashField />
             </p>
 
-            <p className="mt-2 text-right">
-              <span>عنوان</span>
-              <DashField width="13rem" />
-              <span>بنام</span>
-              <DashField width="13rem" />
+            <p className="flex w-full items-end whitespace-nowrap">
+              <span className="shrink-0">عنوان</span>
+              <DashField />
+              <span className="shrink-0">بنام</span>
+              <DashField />
             </p>
 
-            <p className="mt-2 text-right">
-              <span>دعویٰ / درخواست</span>
-              <DashField width="14rem" />
+            <p className="flex w-full items-end whitespace-nowrap">
+              <span className="shrink-0">دعویٰ / درخواست</span>
+              <DashField />
             </p>
 
-            <p className="mt-2 text-right">
-              <span>مقدمہ نمبر</span>
-              <DashField width="10rem" />
-              <span>جرم</span>
-              <DashField width="10rem" />
+            <p className="flex w-full items-end whitespace-nowrap">
+              <span className="shrink-0">مقدمہ نمبر</span>
+              <DashField />
+              <span className="shrink-0">جرم</span>
+              <DashField />
             </p>
 
-            <p className="mt-2 whitespace-nowrap text-right">
-              <span>مقدمہ مندرجہ عنوان میں اپنی طرف سے بمقام</span>
-              <DashField width="9rem" />
-              <span>برائے پیروی و جوابدہی</span>
+            <p className="flex w-full items-end whitespace-nowrap">
+              <span className="shrink-0">مقدمہ مندرجہ عنوان میں اپنی طرف سے بمقام</span>
+              <DashField />
+              <span className="shrink-0">برائے پیروی و جوابدہی</span>
             </p>
 
-            <p className="mt-2 text-right">
-              <span>محترم جناب</span>
-              <DashField width="30rem" />
+            <p className="flex w-full items-end whitespace-nowrap">
+              <span className="shrink-0">محترم جناب</span>
+              <DashField />
             </p>
 
-            <p className="mt-3 text-justify text-[12px] leading-6">
+            <p className="mt-1 text-justify text-[12px] leading-6">
             کو بدین شرط وکیل مقرر کیا ہے کہ میں ہر پیشی پر خود یا بذریعہ مختارِ خاص 
             بروز پیشی حاضر ہوتا رہوں گا۔ اور بروقت پکارے جانے وکیل صاحب موصوف کو اطلاع دے کر
               حاضر عدالت کروں گا۔ پیشی پر مظہر حاضر نہ ہو اور مقدمہ میری غیر حاضری
