@@ -164,7 +164,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
 
             <p className="mt-2 whitespace-nowrap text-right">
               <span>مقدمہ مندرجہ عنوان میں اپنی طرف سے بمقام</span>
-              <DashField width="7rem" />
+              <DashField width="9rem" />
               <span>برائے پیروی و جوابدہی</span>
             </p>
 
@@ -173,7 +173,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
               <DashField width="30rem" />
             </p>
 
-            <p className="mt-3 text-justify text-[14px] leading-7">
+            <p className="mt-3 text-justify text-[12px] leading-6">
             کو بدین شرط وکیل مقرر کیا ہے کہ میں ہر پیشی پر خود یا بذریعہ مختارِ خاص 
             بروز پیشی حاضر ہوتا رہوں گا۔ اور بروقت پکارے جانے وکیل صاحب موصوف کو اطلاع دے کر
               حاضر عدالت کروں گا۔ پیشی پر مظہر حاضر نہ ہو اور مقدمہ میری غیر حاضری
