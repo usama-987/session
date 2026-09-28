@@ -175,7 +175,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
               <DashField />
             </p>
 
-            <p className="mt-1 text-justify text-[12px] leading-6">
+            <p className="mt-1 text-justify text-[13.5px] leading-6">
             کو بدین شرط وکیل مقرر کیا ہے کہ میں ہر پیشی پر خود یا بذریعہ مختارِ خاص 
             بروز پیشی حاضر ہوتا رہوں گا۔ اور بروقت پکارے جانے وکیل صاحب موصوف کو اطلاع دے کر
               حاضر عدالت کروں گا۔ پیشی پر مظہر حاضر نہ ہو اور مقدمہ میری غیر حاضری
