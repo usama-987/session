@@ -33,7 +33,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         src="/watermark.png"
         alt=""
         aria-hidden="true"
-        className="certificate-watermark pointer-events-none absolute left-1/2 top-[58%] z-0 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12] select-none"
+        className="certificate-watermark pointer-events-none absolute left-1/2 top-[48%] z-0 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12] select-none"
         draggable={false}
       />
 
