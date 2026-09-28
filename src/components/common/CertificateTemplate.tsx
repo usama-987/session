@@ -37,7 +37,7 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
         draggable={false}
       />
 
-      <header className="relative z-[1] mx-auto grid w-[calc(100%-7.5rem)] grid-cols-[1fr_1.5fr_1fr] items-start gap-2 px-2">
+      <header className="relative z-[1] mx-auto grid w-[calc(100%-7.5rem)] grid-cols-[1fr_1.5fr_1fr] items-stretch gap-2 px-2">
         <div dir="ltr" className="flex flex-col items-start gap-1 pt-1 text-left">
           <p className="font-[family-name:var(--font-body)] text-[12px] font-bold leading-tight tracking-wide">
             DATED: {dated}
@@ -64,29 +64,26 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
           <p className="mt-3 text-[15px] font-semibold leading-relaxed tracking-wide text-black">
             ڈسٹرکٹ بار ایسوسی ایشن، بہاول نگر
           </p>
-          <div
-            dir="ltr"
-            className="mt-3 mb-4 flex w-full items-center justify-center gap-36"
-          >
+            <div className="relative mx-auto mt-3 mb-4 h-[120px] w-[120px]">
             <p
               lang="ur"
               dir="rtl"
-              className="shrink-0 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
+              className="absolute right-full top-1/2 mr-14 -translate-y-1/2 whitespace-nowrap font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
             >
               سیکرٹری
             </p>
             <div
-              className="certificate-ticket-hex flex h-[120px] w-[138px] shrink-0 items-center justify-center"
+              className="certificate-ticket-hex h-full w-full"
               aria-hidden="true"
             >
               <svg
-                viewBox="0 0 100 87"
+                viewBox="0 0 100 100"
                 className="h-full w-full overflow-visible"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <polygon
-                  points="25,1.5 75,1.5 98.5,43.5 75,85.5 25,85.5 1.5,43.5"
+                  points="30,2 70,2 98,30 98,70 70,98 30,98 2,70 2,30"
                   stroke="black"
                   strokeWidth="2"
                   strokeLinejoin="miter"
@@ -94,24 +91,26 @@ export function CertificateTemplate({ certificate }: CertificateTemplateProps) {
                 />
               </svg>
             </div>
-            <p
-              lang="ur"
-              dir="rtl"
-              className="shrink-0 font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
-            >
-              صدر
-            </p>
           </div>
         </div>
 
-        <div className="flex flex-col items-end justify-start pt-1">
+        <div className="relative z-20 flex flex-col items-end pt-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/watermark.png"
             alt="District Bar Association Bahawalnagar"
-            className="h-[88px] w-[88px] object-contain"
+            className="h-[88px] w-[88px] shrink-0 object-contain"
             draggable={false}
           />
+          <div className="flex flex-1 items-center justify-center">
+            <p
+              lang="ur"
+              dir="rtl"
+              className="w-[88px] text-center font-[family-name:var(--font-urdu)] text-[18px] font-extrabold leading-none text-black"
+            >
+              صدر
+            </p>
+          </div>
         </div>
       </header>
 
